@@ -36,12 +36,12 @@ class Review(models.Model):
     author = models.ForeignKey(
         User, on_delete=models.SET_NULL, related_name='reviews'
     )
-    title = models.ForeignKey(
+    title_id = models.ForeignKey(
         Title, on_delete=models.CASCADE, related_name='reviews'
     )
     text = models.TextField()
     pub_date = models.DateTimeField(auto_now_add=True)
-    year = models.IntegerField(
+    score = models.IntegerField(
         validators=[
             MinValueValidator(0),
             MaxValueValidator(10)
