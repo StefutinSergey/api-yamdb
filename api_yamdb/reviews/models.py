@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class RepresentModel(models.Model):
@@ -55,7 +58,12 @@ class Genre(NameSlugModel):
 
 class Title(RepresentModel):
     name = models.CharField(max_length=256)
-    year = models.IntegerField()
+    year = models.IntegerField(
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(datetime.now().year),
+        ]
+    )
     description = models.TextField(blank=True)
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL, null=True, related_name="titles"
