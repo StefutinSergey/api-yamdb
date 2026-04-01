@@ -1,5 +1,8 @@
 from pathlib import Path
 
+AUTH_USER_MODEL = 'users.User'
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -21,9 +24,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+<<<<<<< feature/thirddeveloper
     'rest_framework',
     'api',
     'reviews',
+=======
+    'users',
+    'api',
+    'rest_framework',
+    'rest_framework_simplejwt',
+>>>>>>> develop
 ]
 
 MIDDLEWARE = [
