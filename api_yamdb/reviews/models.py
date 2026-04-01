@@ -1,3 +1,7 @@
+"""Модели для приложения reviews."""
+
+from datetime import datetime
+
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -6,31 +10,54 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 User = get_user_model()
 
 
-class Category(models.Model):
-    name = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True)
+class RepresentModel(models.Model):
+    """Абстрактная модель для представления объектов с полем name."""
 
     def __str__(self):
         return self.name
 
+    class Meta:
+        abstract = True
 
-class Title(models.Model):
-    name = models.TextField()
-    category = models.ForeignKey(
-        Category, on_delete=models.SET_NULL,
-        related_name='titles', blank=True, null=True
-    )
 
+class NameSlugModel(RepresentModel):
+    """Абстрактная модель для объектов с полями name и slug."""
+
+    name = models.CharField(max_length=256)
+    slug = models.SlugField(max_length=50, unique=True)
+
+    class Meta:
+        abstract = True
+
+
+class Category(NameSlugModel):
+    """Модель для категорий произведений."""
+
+    pass
+
+
+class Genre(NameSlugModel):
+    """Модель для жанров произведений."""
+
+    pass
+
+
+class Title(RepresentModel):
+    """Модель для произведений."""
+
+    name = models.CharField(max_length=256)
     year = models.IntegerField(
         validators=[
-            MinValueValidator(0000),
-            MaxValueValidator(2100)
-        ],
+            MinValueValidator(0),
+            MaxValueValidator(datetime.now().year),
+        ]
     )
+    description = models.TextField(blank=True)
+    category = models.ForeignKey(
+        Category, on_delete=models.SET_NULL, null=True, related_name="titles"
+    )
+    genre = models.ManyToManyField(Genre, related_name="titles")
 
-    def __str__(self):
-        return self.name
-    
 
 class Review(models.Model):
     author = models.ForeignKey(
