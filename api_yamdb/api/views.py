@@ -1,3 +1,8 @@
+<<<<<<< feature/thirddeveloper
+from django.shortcuts import render
+
+# Create your views here.
+=======
 import random
 import string
 from rest_framework.views import APIView
@@ -75,3 +80,4 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAdmin]
+>>>>>>> develop

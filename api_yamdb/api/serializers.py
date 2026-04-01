@@ -1,4 +1,27 @@
 from rest_framework import serializers
+<<<<<<< feature/thirddeveloper
+from rest_framework.validators import UniqueTogetherValidator 
+
+from reviews.models import Comment, Review
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        read_only=True, slug_field='username'
+    )
+
+    class Meta:
+        fields = '__all__'
+        read_only_fields = ['review']
+        model = Comment
+        validators = ( 
+            UniqueTogetherValidator( 
+                queryset=Comment.objects.all(),
+                fields=('author', 'title_id'),
+                message='You already reviewed this title.',
+            ),
+        )
+=======
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -26,3 +49,4 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'first_name',
                   'last_name', 'bio', 'role')
         read_only_fields = ('role',)
+>>>>>>> develop
