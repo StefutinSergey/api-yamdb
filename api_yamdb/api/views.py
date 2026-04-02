@@ -1,7 +1,7 @@
 import random
 import string
 from rest_framework.views import APIView
-from rest_framework import status, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model
@@ -107,11 +107,17 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    """ViewSet для категорий (только администратор может редактировать)."""
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
+    http_method_names = ['get', 'post', 'put', 'delete']
     lookup_field = 'slug'
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name']
+
+    def retrieve(self, request, *args, **kwargs):
+
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class GenreViewSet(viewsets.ModelViewSet):
@@ -139,7 +145,7 @@ class TitleViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(category__slug=category_slug)
         year = self.request.query_params.get('year')
         if year:
-            queryset = queryset.filter(year=year)
+            queryset = queryset.filter(year=name)
         name = self.request.query_params.get('name')
         if name:
             queryset = queryset.filter(name=name)

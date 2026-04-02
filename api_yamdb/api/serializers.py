@@ -62,6 +62,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             ),
         )
 
+
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
