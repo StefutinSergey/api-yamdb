@@ -150,7 +150,7 @@ class TitleViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(category__slug=category_slug)
         year = self.request.query_params.get('year')
         if year:
-            queryset = queryset.filter(year=name)
+            queryset = queryset.filter(year=year)
         name = self.request.query_params.get('name')
         if name:
             queryset = queryset.filter(name=name)
