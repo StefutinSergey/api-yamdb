@@ -3,7 +3,7 @@ from rest_framework.validators import UniqueTogetherValidator
 from django.contrib.auth import get_user_model
 
 
-from reviews.models import Comment, Review
+from reviews.models import Comment, Review, Category, Title, Genre
 
 from django.contrib.auth import get_user_model
 
@@ -43,10 +43,65 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['review']
         model = Comment
-        validators = ( 
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        read_only=True, slug_field='username'
+    )
+
+    class Meta:
+        fields = '__all__'
+        read_only_fields = ['title_id']
+        model = Review
+        validators = (
             UniqueTogetherValidator( 
-                queryset=Comment.objects.all(),
+                queryset=Review.objects.all(),
                 fields=('author', 'title_id'),
                 message='You already reviewed this title.',
             ),
         )
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ('name', 'slug')
+        lookup_field = 'slug'
+        extra_kwargs = {
+            'url': {'lookup_field': 'slug'}
+        }
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    """Сериализатор для жанров."""
+    class Meta:
+        model = Genre
+        fields = ('name', 'slug')
+        lookup_field = 'slug'
+        extra_kwargs = {
+            'url': {'lookup_field': 'slug'}
+        }
+
+
+class TitleSerializer(serializers.ModelSerializer):
+    category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(),
+        write_only=True,
+        slug_field='slug'
+    )
+    genre = serializers.SlugRelatedField(
+        queryset=Genre.objects.all(),
+        many=True,
+        write_only=True,
+        slug_field='slug'
+    )
+
+    class Meta:
+        model = Title
+        fields = '__all__'
+    
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret['category'] = CategorySerializer(instance.category).data
+        ret['genre'] = GenreSerializer(instance.genre.all(), many=True).data
+        return ret

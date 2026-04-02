@@ -61,7 +61,7 @@ class Title(RepresentModel):
 
 class Review(models.Model):
     author = models.ForeignKey(
-        User, on_delete=models.SET_NULL, related_name='reviews'
+        User, on_delete=models.CASCADE, related_name='reviews'
     )
     title_id = models.ForeignKey(
         Title, on_delete=models.CASCADE, related_name='reviews'
@@ -78,7 +78,7 @@ class Review(models.Model):
 
 class Comment(models.Model):
     author = models.ForeignKey(
-        User, on_delete=models.SET_NULL, related_name='comments'
+        User, on_delete=models.CASCADE, related_name='comments'
     )
     review = models.ForeignKey(
         Review, on_delete=models.CASCADE, related_name='comments'
