@@ -54,10 +54,8 @@ class TitleWriteSerializer(serializers.ModelSerializer):
         genres = validated_data.pop("genre")
         category = validated_data.pop("category")
 
-        title = Title.objects.create(**validated_data)
-
-        title.genre.set([Genre.objects.get(slug=slug) for slug in genres])
-        title.category = Category.objects.get(slug=category)
+        title = Title.objects.create(**validated_data, category=category)
+        title.genre.set(genres)
         title.save()
 
         return title
