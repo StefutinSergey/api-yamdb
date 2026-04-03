@@ -52,15 +52,20 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = '__all__'
-        read_only_fields = ['title_id']
+        read_only_fields = ['title']
         model = Review
-        validators = (
-            UniqueTogetherValidator( 
-                queryset=Review.objects.all(),
-                fields=('author', 'title_id'),
-                message='You already reviewed this title.',
-            ),
-        )
+
+    def validate(self, data):
+        request = self.context.get('request')
+        if request.method == 'POST' and request.user.is_authenticated:
+            title_id = request.parser_context.get('kwargs', {}).get('title_id')
+            if Review.objects.filter(
+                author=request.user, title_id=title_id
+            ).exists():
+                raise serializers.ValidationError(
+                    'You already reviewed this title.'
+                )
+        return data
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -97,10 +102,12 @@ class TitleSerializer(serializers.ModelSerializer):
         slug_field='slug'
     )
 
+    rating = serializers.FloatField(read_only=True)
+
     class Meta:
         model = Title
         fields = '__all__'
-    
+
     def to_representation(self, instance):
         ret = super().to_representation(instance)
         ret['category'] = CategorySerializer(instance.category).data

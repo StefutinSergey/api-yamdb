@@ -63,7 +63,7 @@ class Review(models.Model):
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='reviews'
     )
-    title_id = models.ForeignKey(
+    title = models.ForeignKey(
         Title, on_delete=models.CASCADE, related_name='reviews'
     )
     text = models.TextField()
@@ -74,6 +74,13 @@ class Review(models.Model):
             MaxValueValidator(10)
         ],
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['author', 'title'], name='unique_review'
+            )
+        ]
 
 
 class Comment(models.Model):
