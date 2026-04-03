@@ -1,21 +1,34 @@
 import random
 import string
-from rest_framework.views import APIView
-from rest_framework import filters, status, viewsets
-from rest_framework import status, viewsets, filters
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
-from django.shortcuts import get_object_or_404
 from django.db.models import Avg
-from rest_framework_simplejwt.tokens import AccessToken
+from django.shortcuts import get_object_or_404
+
+from rest_framework import filters, status, viewsets
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import AccessToken
 
-from .serializers import SignUpSerializer, UserSerializer, TokenSerializer, CommentSerializer, ReviewSerializer, CategorySerializer, GenreSerializer, TitleSerializer
-from .permissions import IsAdmin, IsOwnerOrReadOnly, IsAdminOrReadOnly, IsAuthorOrModeratorOrAdmin
-from reviews.models import Comment, Review, Category, Genre, Title
-
+from .permissions import (
+    IsAdmin,
+    IsAdminOrReadOnly,
+    IsAuthorOrModeratorOrAdmin,
+)
+from .serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    GenreSerializer,
+    ReviewSerializer,
+    SignUpSerializer,
+    TitleSerializer,
+    TokenSerializer,
+    UserSerializer,
+)
+from reviews.models import Category, Comment, Genre, Review, Title
 User = get_user_model()
 
 
@@ -31,7 +44,10 @@ class SignUpView(APIView):
             user = User.objects.get(username=username)
             if user.email != email:
                 return Response(
-                    {'username': 'Пользователь с таким username уже существует.'},
+                    {
+                        'username':
+                        'Пользователь с таким username уже существует.'
+                    },
                     status=status.HTTP_400_BAD_REQUEST
                 )
         except User.DoesNotExist:
@@ -70,7 +86,9 @@ class TokenView(APIView):
             return Response({'error': 'Неверный код'},
                             status=status.HTTP_400_BAD_REQUEST)
         access_token = AccessToken.for_user(user)
-        return Response({'access': str(access_token)}, status=status.HTTP_200_OK)
+        return Response(
+            {'access': str(access_token)}, status=status.HTTP_200_OK
+        )
 
 
 class MeView(APIView):
@@ -104,7 +122,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-
 class ReviewViewSet(viewsets.ModelViewSet):
 
     serializer_class = ReviewSerializer
@@ -122,7 +139,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
- 
+
     serializer_class = CommentSerializer
     permission_classes = [IsAuthorOrModeratorOrAdmin]
 
@@ -187,4 +204,3 @@ class TitleViewSet(viewsets.ModelViewSet):
         if name:
             queryset = queryset.filter(name=name)
         return queryset
-
