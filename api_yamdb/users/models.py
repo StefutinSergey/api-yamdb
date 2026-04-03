@@ -14,7 +14,7 @@ class User(AbstractUser):
 
     def is_admin(self):
         """Возвращает True, если пользователь администратор."""
-        return self.role == 'admin' or self.is_superuser
+        return self.role == 'admin' or self.is_superuser or self.is_staff
 
     def is_moderator(self):
         """Возвращает True, если пользователь модератор."""
