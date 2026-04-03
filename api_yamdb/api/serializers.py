@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
 from django.contrib.auth import get_user_model
 
 
@@ -135,7 +134,6 @@ class TitleSerializer(serializers.ModelSerializer):
         ret['category'] = CategorySerializer(instance.category).data
         ret['genre'] = GenreSerializer(instance.genre.all(), many=True).data
         return ret
-        fields = ('username', 'email', 'first_name', 'last_name', 'bio', 'role')
 
     def validate_role(self, value):
         allowed_roles = ['user', 'moderator', 'admin']
