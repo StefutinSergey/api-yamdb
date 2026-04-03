@@ -1,12 +1,13 @@
 import random
 import string
 from rest_framework.views import APIView
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, filters
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.pagination import PageNumberPagination
 
 from .serializers import SignUpSerializer, UserSerializer, TokenSerializer
 from .permissions import IsAdmin
@@ -51,8 +52,8 @@ class TokenView(APIView):
         if user.confirmation_code != code:
             return Response({'error': 'Неверный код'},
                             status=status.HTTP_400_BAD_REQUEST)
-        token = AccessToken.for_user(user)
-        return Response({'access': str(token)}, status=status.HTTP_200_OK)
+        access_token = AccessToken.for_user(user)
+        return Response({'access': str(access_token)}, status=status.HTTP_200_OK)
 
 
 class MeView(APIView):
@@ -74,4 +75,8 @@ class MeView(APIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin, IsAuthenticated]
+    pagination_class = PageNumberPagination
+    lookup_field = 'username'
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['username', 'email']
