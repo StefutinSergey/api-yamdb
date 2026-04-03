@@ -1,4 +1,10 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
+from django.contrib.auth import get_user_model
+
+
+from reviews.models import Comment, Review, Category, Title, Genre
+
 from django.contrib.auth import get_user_model
 import re
 
@@ -38,3 +44,84 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'first_name',
                   'last_name', 'bio', 'role')
         read_only_fields = ('role',)
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        read_only=True, slug_field='username'
+    )
+
+    class Meta:
+        fields = '__all__'
+        read_only_fields = ['review']
+        model = Comment
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        read_only=True, slug_field='username'
+    )
+
+    class Meta:
+        fields = '__all__'
+        read_only_fields = ['title']
+        model = Review
+
+    def validate(self, data):
+        request = self.context.get('request')
+        if request.method == 'POST' and request.user.is_authenticated:
+            title_id = request.parser_context.get('kwargs', {}).get('title_id')
+            if Review.objects.filter(
+                author=request.user, title_id=title_id
+            ).exists():
+                raise serializers.ValidationError(
+                    'You already reviewed this title.'
+                )
+        return data
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ('name', 'slug')
+        lookup_field = 'slug'
+        extra_kwargs = {
+            'url': {'lookup_field': 'slug'}
+        }
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    """Сериализатор для жанров."""
+    class Meta:
+        model = Genre
+        fields = ('name', 'slug')
+        lookup_field = 'slug'
+        extra_kwargs = {
+            'url': {'lookup_field': 'slug'}
+        }
+
+
+class TitleSerializer(serializers.ModelSerializer):
+    category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(),
+        write_only=True,
+        slug_field='slug'
+    )
+    genre = serializers.SlugRelatedField(
+        queryset=Genre.objects.all(),
+        many=True,
+        write_only=True,
+        slug_field='slug'
+    )
+
+    rating = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = Title
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret['category'] = CategorySerializer(instance.category).data
+        ret['genre'] = GenreSerializer(instance.genre.all(), many=True).data
+        return ret
