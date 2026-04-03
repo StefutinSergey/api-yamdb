@@ -9,6 +9,7 @@ from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
 from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.pagination import PageNumberPagination
 
 from .serializers import SignUpSerializer, UserSerializer, TokenSerializer, CommentSerializer, ReviewSerializer, CategorySerializer, GenreSerializer, TitleSerializer
 from .permissions import IsAdmin, IsOwnerOrReadOnly, IsAdminOrReadOnly, IsAuthorOrModeratorOrAdmin
@@ -25,13 +26,26 @@ class SignUpView(APIView):
         serializer.is_valid(raise_exception=True)
         username = serializer.validated_data['username']
         email = serializer.validated_data['email']
-        user, _ = User.objects.get_or_create(username=username, email=email)
-        code = ''.join(random.choices(string.digits, k=6))
-        user.confirmation_code = code
+        try:
+            user = User.objects.get(username=username)
+            if user.email != email:
+                return Response(
+                    {'username': 'Пользователь с таким username уже существует.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except User.DoesNotExist:
+            if User.objects.filter(email=email).exists():
+                return Response(
+                    {'email': 'Пользователь с таким email уже существует.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            user = User.objects.create_user(username=username, email=email)
+        confirmation_code = ''.join(random.choices(string.digits, k=6))
+        user.confirmation_code = confirmation_code
         user.save()
         send_mail(
             subject='Код подтверждения',
-            message=f'Ваш код: {code}',
+            message=f'Ваш код: {confirmation_code}',
             from_email=None,
             recipient_list=[email],
         )
@@ -54,12 +68,13 @@ class TokenView(APIView):
         if user.confirmation_code != code:
             return Response({'error': 'Неверный код'},
                             status=status.HTTP_400_BAD_REQUEST)
-        token = AccessToken.for_user(user)
-        return Response({'access': str(token)}, status=status.HTTP_200_OK)
+        access_token = AccessToken.for_user(user)
+        return Response({'access': str(access_token)}, status=status.HTTP_200_OK)
 
 
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'patch']
 
     def get(self, request):
         serializer = UserSerializer(request.user)
@@ -161,3 +176,12 @@ class TitleViewSet(viewsets.ModelViewSet):
         if name:
             queryset = queryset.filter(name=name)
         return queryset
+    permission_classes = [IsAdmin, IsAuthenticated]
+    pagination_class = PageNumberPagination
+    lookup_field = 'username'
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['username', 'email']
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+    def put(self, request):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
