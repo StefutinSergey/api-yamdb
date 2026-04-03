@@ -19,13 +19,6 @@ class SignUpSerializer(serializers.Serializer):
             )
         return value
 
-    def validate_email(self, value):
-        if len(value) > 254:
-            raise serializers.ValidationError(
-                'Email не может быть длинее 254 символов.'
-            )
-        return value
-
 
 class TokenSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -33,8 +26,25 @@ class TokenSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=True)
+
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name',
-                  'last_name', 'bio', 'role')
-        read_only_fields = ('role',)
+        fields = ('username', 'email', 'first_name', 'last_name', 'bio', 'role')
+
+    def validate_role(self, value):
+        allowed_roles = ['user', 'moderator', 'admin']
+        if value not in allowed_roles:
+            raise serializers.ValidationError('Недопустимая роль')
+        return value
+    
+    def validate_email(self, value):
+        if len(value) > 254:
+            raise serializers.ValidationError('Email не может быть длиннее 254 символов.')
+        if self.instance is None:
+            if User.objects.filter(email=value).exists():
+                raise serializers.ValidationError('Пользователь с таким email уже существует.')
+        else: 
+            if User.objects.exclude(pk=self.instance.pk).filter(email=value).exists():
+                raise serializers.ValidationError('Пользователь с таким email уже существует.')
+        return value
