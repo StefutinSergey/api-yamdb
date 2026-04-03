@@ -23,13 +23,26 @@ class SignUpView(APIView):
         serializer.is_valid(raise_exception=True)
         username = serializer.validated_data['username']
         email = serializer.validated_data['email']
-        user, _ = User.objects.get_or_create(username=username, email=email)
-        code = ''.join(random.choices(string.digits, k=6))
-        user.confirmation_code = code
+        try:
+            user = User.objects.get(username=username)
+            if user.email != email:
+                return Response(
+                    {'username': 'Пользователь с таким username уже существует.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except User.DoesNotExist:
+            if User.objects.filter(email=email).exists():
+                return Response(
+                    {'email': 'Пользователь с таким email уже существует.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            user = User.objects.create_user(username=username, email=email)
+        confirmation_code = ''.join(random.choices(string.digits, k=6))
+        user.confirmation_code = confirmation_code
         user.save()
         send_mail(
             subject='Код подтверждения',
-            message=f'Ваш код: {code}',
+            message=f'Ваш код: {confirmation_code}',
             from_email=None,
             recipient_list=[email],
         )
@@ -58,6 +71,7 @@ class TokenView(APIView):
 
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'patch']
 
     def get(self, request):
         serializer = UserSerializer(request.user)
@@ -80,3 +94,7 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'username'
     filter_backends = [filters.SearchFilter]
     search_fields = ['username', 'email']
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+    def put(self, request):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
