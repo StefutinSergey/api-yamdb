@@ -118,9 +118,6 @@ class UserViewSet(viewsets.ModelViewSet):
     search_fields = ['username', 'email']
     http_method_names = ['get', 'post', 'patch', 'delete']
 
-    def put(self, request):
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
 
 class ReviewViewSet(viewsets.ModelViewSet):
 
