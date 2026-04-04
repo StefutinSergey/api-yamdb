@@ -3,7 +3,6 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (SignUpView,
                     TokenView,
-                    MeView,
                     UserViewSet,
                     ReviewViewSet,
                     CommentViewSet,
@@ -42,6 +41,5 @@ urlpatterns = [
                  'delete': 'destroy'}),
          name='comment-detail'),
     path('auth/token/', TokenView.as_view(), name='token'),
-    path('users/me/', MeView.as_view(), name='me'),
     path('', include(router_v1.urls)),
 ]

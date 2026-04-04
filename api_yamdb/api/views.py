@@ -7,6 +7,7 @@ from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 
 from rest_framework import filters, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -91,23 +92,6 @@ class TokenView(APIView):
         )
 
 
-class MeView(APIView):
-    permission_classes = [IsAuthenticated]
-    http_method_names = ['get', 'patch']
-
-    def get(self, request):
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
-
-    def patch(self, request):
-        serializer = UserSerializer(
-            request.user, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.validated_data.pop('role', None)
-        serializer.save()
-        return Response(serializer.data)
-
-
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -117,6 +101,28 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['username', 'email']
     http_method_names = ['get', 'post', 'patch', 'delete']
+
+    @action(
+        detail=False,
+        methods=['get', 'patch'],
+        url_path='me',
+        url_name='me',
+        permission_classes=[IsAuthenticated]  # для /me/ нужна просто авторизация
+    )
+    def me(self, request):
+        user = request.user
+        if request.method == 'GET':
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
+        elif request.method == 'PATCH':
+            serializer = self.get_serializer(
+                user, data=request.data, partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            if 'role' in serializer.validated_data:
+                del serializer.validated_data['role']
+            serializer.save()
+            return Response(serializer.data)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
