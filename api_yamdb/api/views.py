@@ -128,7 +128,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthorOrModeratorOrAdmin]
     
     def get_title(self):
-        if not hasattr(self, '_post'):
+        if not hasattr(self, '_title'):
             self._title = get_object_or_404(Title, pk=self.kwargs['title_id'])
         return self._title
 
