@@ -18,7 +18,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from .permissions import (
     IsAdmin,
     IsAdminOrReadOnly,
-    IsAuthorOrModeratorOrAdmin,
+    IsAuthorOrModeratorOrAdminOrReadOnly,
 )
 from .serializers import (
     CategorySerializer,
@@ -124,7 +124,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
 
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthorOrModeratorOrAdmin]
+    permission_classes = [IsAuthorOrModeratorOrAdminOrReadOnly]
 
     def get_title(self):
         if not hasattr(self, '_title'):
@@ -144,7 +144,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
 
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthorOrModeratorOrAdmin]
+    permission_classes = [IsAuthorOrModeratorOrAdminOrReadOnly]
 
     def get_review(self):
         if not hasattr(self, '_review'):
