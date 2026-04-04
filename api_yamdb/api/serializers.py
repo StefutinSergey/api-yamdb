@@ -61,8 +61,6 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ("name", "slug")
-        lookup_field = "slug"
-        extra_kwargs = {"url": {"lookup_field": "slug"}}
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -71,8 +69,6 @@ class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genre
         fields = ("name", "slug")
-        lookup_field = "slug"
-        extra_kwargs = {"url": {"lookup_field": "slug"}}
 
 
 class TitleReadSerializer(serializers.ModelSerializer):
@@ -94,6 +90,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(), slug_field="slug"
     )
@@ -104,6 +101,7 @@ class TitleWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Title
         fields = (
+            "id",
             "name",
             "year",
             "description",
