@@ -1,8 +1,6 @@
 from pathlib import Path
 import string
 
-AUTH_USER_MODEL = 'users.User'
-
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -133,3 +131,4 @@ CONFIRMATION_CODE_CHARS = string.digits
 MAX_USERNAME_LENGTH = 150
 MAX_EMAIL_LENGTH = 254
 FORBIDDEN_USERNAME = 'me'
+AUTH_USER_MODEL = 'reviews.User'
