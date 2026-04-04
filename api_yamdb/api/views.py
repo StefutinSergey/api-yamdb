@@ -126,15 +126,19 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthorOrModeratorOrAdmin]
+    
+    def get_title(self):
+        if not hasattr(self, '_post'):
+            self._title = get_object_or_404(Title, pk=self.kwargs['title_id'])
+        return self._title
 
     def get_queryset(self):
-        return Review.objects.filter(title_id=self.kwargs.get('title_id'))
+        return self.get_title().reviews.all()
 
     def perform_create(self, serializer):
-        title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
         serializer.save(
             author=self.request.user,
-            title=title
+            title=self.get_title()
         )
 
 
