@@ -126,7 +126,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthorOrModeratorOrAdmin]
-    
+
     def get_title(self):
         if not hasattr(self, '_title'):
             self._title = get_object_or_404(Title, pk=self.kwargs['title_id'])
@@ -147,15 +147,20 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthorOrModeratorOrAdmin]
 
+    def get_review(self):
+        if not hasattr(self, '_review'):
+            self._review = get_object_or_404(Review, pk=self.kwargs['review_id'])
+        return self._review
+
     def get_queryset(self):
-        return Comment.objects.filter(review_id=self.kwargs.get('review_id'))
+        return self.get_review().comments.all()
 
     def perform_create(self, serializer):
         review_id = self.kwargs.get('review_id')
         get_object_or_404(Review, id=review_id)
         serializer.save(
             author=self.request.user,
-            review_id=review_id
+            review=self.get_review()
         )
 
 
