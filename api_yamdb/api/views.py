@@ -167,34 +167,27 @@ class CommentViewSet(viewsets.ModelViewSet):
         )
 
 
-class CategoryViewSet(
+class BaseSlugViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet
 ):
+    permission_classes = [IsAdminOrReadOnly]
+    lookup_field = 'slug'
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name']
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+
+class CategoryViewSet(BaseSlugViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAdminOrReadOnly]
-    http_method_names = ['get', 'post', 'put', 'delete']
-    lookup_field = 'slug'
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['name']
 
 
-class GenreViewSet(
-    mixins.ListModelMixin,
-    mixins.CreateModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet
-):
+class GenreViewSet(BaseSlugViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = [IsAdminOrReadOnly]
-    http_method_names = ['get', 'post', 'put', 'delete']
-    lookup_field = 'slug'
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['name']
 
 
 class TitleViewSet(viewsets.ModelViewSet):
