@@ -11,6 +11,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import TitleFilter
 
+
 from .serializers import (
     SignUpSerializer,
     UserSerializer,
