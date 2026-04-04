@@ -29,7 +29,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'api',
     'reviews',
-    'users',
 ]
 
 MIDDLEWARE = [
@@ -131,3 +130,6 @@ REST_FRAMEWORK = {
 
 CONFIRMATION_CODE_LENGTH = 6
 CONFIRMATION_CODE_CHARS = string.digits
+MAX_USERNAME_LENGTH = 150
+MAX_EMAIL_LENGTH = 254
+FORBIDDEN_USERNAME = 'me'
