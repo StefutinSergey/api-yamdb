@@ -1,31 +1,36 @@
 import random
 import string
 
+from django.conf import settings
+from django.db import IntegrityError
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
-
-from rest_framework import filters, mixins, status, viewsets
-from rest_framework.decorators import action
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, mixins, status, viewsets, serializers
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import AccessToken
 
+from .filters import TitleFilter
 from .permissions import (
     IsAdmin,
     IsAdminOrReadOnly,
-    IsAuthorOrModeratorOrAdmin,
+    IsAuthorOrModeratorOrAdminOrReadOnly,
 )
+
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
     GenreSerializer,
     ReviewSerializer,
     SignUpSerializer,
-    TitleSerializer,
+    TitleReadSerializer,
+    TitleWriteSerializer,
     TokenSerializer,
     UserSerializer,
 )
@@ -33,63 +38,56 @@ from reviews.models import Category, Comment, Genre, Review, Title
 User = get_user_model()
 
 
-class SignUpView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        serializer = SignUpSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        username = serializer.validated_data['username']
-        email = serializer.validated_data['email']
-        try:
-            user = User.objects.get(username=username)
-            if user.email != email:
-                return Response(
-                    {
-                        'username':
-                        'Пользователь с таким username уже существует.'
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        except User.DoesNotExist:
-            if User.objects.filter(email=email).exists():
-                return Response(
-                    {'email': 'Пользователь с таким email уже существует.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            user = User.objects.create_user(username=username, email=email)
-        confirmation_code = ''.join(random.choices(string.digits, k=6))
-        user.confirmation_code = confirmation_code
-        user.save()
-        send_mail(
-            subject='Код подтверждения',
-            message=f'Ваш код: {confirmation_code}',
-            from_email=None,
-            recipient_list=[email],
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def signup(request):
+    serializer = SignUpSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    username = serializer.validated_data['username']
+    email = serializer.validated_data['email']
+    try:
+        user, created = User.objects.get_or_create(
+            username=username, defaults={'email': email}
         )
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class TokenView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        serializer = TokenSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        username = serializer.validated_data['username']
-        code = serializer.validated_data['confirmation_code']
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            return Response({'error': 'Пользователь не найден'},
-                            status=status.HTTP_404_NOT_FOUND)
-        if user.confirmation_code != code:
-            return Response({'error': 'Неверный код'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        access_token = AccessToken.for_user(user)
+    except IntegrityError:
         return Response(
-            {'access': str(access_token)}, status=status.HTTP_200_OK
+            {'email': 'Пользователь с таким email уже существует.'},
+            status=status.HTTP_400_BAD_REQUEST
         )
+
+    if not created and user.email != email:
+        return Response(
+            {'username': 'Пользователь с таким username уже существует.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    chars = getattr(settings, 'CONFIRMATION_CODE_CHARS', string.digits)
+    length = getattr(settings, 'CONFIRMATION_CODE_LENGTH', 6)
+    confirmation_code = ''.join(random.choices(chars, k=length))
+    user.confirmation_code = confirmation_code
+    user.save()
+    send_mail(
+        subject='Код подтверждения',
+        message=f'Ваш код: {confirmation_code}',
+        from_email=None,
+        recipient_list=[email],
+    )
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def token(request):
+    serializer = TokenSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    username = serializer.validated_data['username']
+    code = serializer.validated_data['confirmation_code']
+    user = get_object_or_404(User, username=username)
+    if user.confirmation_code != code:
+        raise serializers.ValidationError(
+            {'detail': 'Неверный код подтверждения'})
+    user.confirmation_code = None
+    user.save()
+    return Response({'access': str(AccessToken.for_user(user))})
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -128,7 +126,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
 
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthorOrModeratorOrAdmin]
+    permission_classes = [IsAuthorOrModeratorOrAdminOrReadOnly]
 
     def get_title(self):
         if not hasattr(self, '_title'):
@@ -148,7 +146,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
 
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthorOrModeratorOrAdmin]
+    permission_classes = [IsAuthorOrModeratorOrAdminOrReadOnly]
 
     def get_review(self):
         if not hasattr(self, '_review'):
@@ -192,23 +190,15 @@ class GenreViewSet(BaseSlugViewSet):
 
 class TitleViewSet(viewsets.ModelViewSet):
     """ViewSet для произведений (только администратор может редактировать)."""
-    queryset = Title.objects.annotate(rating=Avg('reviews__score'))
-    serializer_class = TitleSerializer
-    permission_classes = [IsAdminOrReadOnly]
-    http_method_names = ['get', 'post', 'patch', 'delete']
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        genre_slug = self.request.query_params.get('genre')
-        if genre_slug:
-            queryset = queryset.filter(genre__slug=genre_slug)
-        category_slug = self.request.query_params.get('category')
-        if category_slug:
-            queryset = queryset.filter(category__slug=category_slug)
-        year = self.request.query_params.get('year')
-        if year:
-            queryset = queryset.filter(year=year)
-        name = self.request.query_params.get('name')
-        if name:
-            queryset = queryset.filter(name=name)
-        return queryset
+    queryset = Title.objects.annotate(rating=Avg("reviews__score")).order_by("name")
+    permission_classes = [IsAdminOrReadOnly]
+    http_method_names = ["get", "post", "patch", "delete"]
+
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TitleFilter
+
+    def get_serializer_class(self):
+        if self.action in ("list", "retrieve"):
+            return TitleReadSerializer
+        return TitleWriteSerializer
