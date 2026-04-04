@@ -9,24 +9,23 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 User = get_user_model()
 
 
-class RepresentModel(models.Model):
-    """Абстрактная модель для представления объектов с полем name."""
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        abstract = True
-
-
-class NameSlugModel(RepresentModel):
+class NameSlugModel(models.Model):
     """Абстрактная модель для объектов с полями name и slug."""
 
-    name = models.CharField(max_length=256)
-    slug = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(
+        max_length=256,
+        unique=True,
+        verbose_name="Имя",
+    )
+    slug = models.SlugField(
+        max_length=50,
+        unique=True,
+        verbose_name="Слаг",
+    )
 
     class Meta:
         abstract = True
+        ordering = ["name"]
 
 
 class Category(NameSlugModel):
@@ -35,7 +34,10 @@ class Category(NameSlugModel):
     class Meta:
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
-        ordering = ["name"]
+        # ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
 class Genre(NameSlugModel):
@@ -44,10 +46,13 @@ class Genre(NameSlugModel):
     class Meta:
         verbose_name = "Жанр"
         verbose_name_plural = "Жанры"
-        ordering = ["name"]
+        # ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
-class Title(RepresentModel):
+class Title(models.Model):
     """Модель для произведений."""
 
     @staticmethod
@@ -70,6 +75,9 @@ class Title(RepresentModel):
         verbose_name = "Произведение"
         verbose_name_plural = "Призведения"
         ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
 class Review(models.Model):
