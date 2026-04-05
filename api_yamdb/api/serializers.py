@@ -1,69 +1,65 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-
+from django.conf import settings
+from django.core.validators import RegexValidator
 
 from reviews.models import Comment, Review, Category, Title, Genre
 
 from django.contrib.auth import get_user_model
-import re
 
 User = get_user_model()
 
 
 class SignUpSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=150)
-    email = serializers.EmailField(max_length=254)
-
-    def validate_username(self, value):
-        if value.lower() == 'me':
-            raise serializers.ValidationError(
-                'Имя пользователя "me" не разрешено.')
-        if not re.match(r'^[\w.@+-]+\Z', value):
-            raise serializers.ValidationError(
-                'Имя пользователя может'
-                ' содержать только буквы, цифры и символы'
+    username = serializers.CharField(
+        max_length=settings.MAX_USERNAME_LENGTH,
+        required=True,
+        validators=[
+            RegexValidator(
+                regex=r'^[\w.@+-]+\Z',
+                message='Имя пользователя может содержать только латинские '
+                'буквы, цифры и символы'
             )
-        return value
+        ]
+    )
+    email = serializers.EmailField(
+        max_length=settings.MAX_EMAIL_LENGTH,
+        required=True
+    )
+
+    def validate_username(self, username):
+        if username == settings.FORBIDDEN_USERNAME:
+            raise serializers.ValidationError(
+                f'Имя пользователя "{settings.FORBIDDEN_USERNAME}" '
+                f'не разрешено.'
+            )
+        return username
 
 
 class TokenSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    confirmation_code = serializers.CharField()
+    username = serializers.CharField(
+        max_length=settings.MAX_USERNAME_LENGTH,
+        required=True
+    )
+    confirmation_code = serializers.CharField(
+        max_length=settings.CONFIRMATION_CODE_LENGTH,
+        required=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\d+$',
+                message='Код подтверждения должен состоять только из цифр'
+            )
+        ]
+
+    )
 
 
 class UserSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(required=True)
-
     class Meta:
         model = User
         fields = (
             'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
-
-    def validate_role(self, value):
-        allowed_roles = ['user', 'moderator', 'admin']
-        if value not in allowed_roles:
-            raise serializers.ValidationError('Недопустимая роль')
-        return value
-
-    def validate_email(self, value):
-        if len(value) > 254:
-            raise serializers.ValidationError(
-                'Email не может быть длиннее 254 символов.'
-            )
-        if self.instance is None:
-            if User.objects.filter(email=value).exists():
-                raise serializers.ValidationError(
-                    'Пользователь с таким email уже существует.'
-                )
-        else:
-            if User.objects.exclude(
-                pk=self.instance.pk
-            ).filter(email=value).exists():
-                raise serializers.ValidationError(
-                    'Пользователь с таким email уже существует.'
-                )
-        return value
 
 
 class CommentSerializer(serializers.ModelSerializer):

@@ -1,9 +1,8 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from .views import (SignUpView,
-                    TokenView,
-                    MeView,
+from .views import (signup,
+                    token,
                     UserViewSet,
                     ReviewViewSet,
                     CommentViewSet,
@@ -19,7 +18,7 @@ router_v1.register('titles', TitleViewSet, basename='titles')
 
 
 urlpatterns = [
-    path('auth/signup/', SignUpView.as_view(), name='signup'),
+    path('auth/signup/', signup, name='signup'),
     path('titles/<int:title_id>/reviews/',
          ReviewViewSet.as_view({'get': 'list', 'post': 'create'}),
          name='review-list'),
@@ -41,7 +40,6 @@ urlpatterns = [
                  'patch': 'partial_update',
                  'delete': 'destroy'}),
          name='comment-detail'),
-    path('auth/token/', TokenView.as_view(), name='token'),
-    path('users/me/', MeView.as_view(), name='me'),
+    path('auth/token/', token, name='token'),
     path('', include(router_v1.urls)),
 ]

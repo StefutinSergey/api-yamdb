@@ -1,6 +1,5 @@
 from pathlib import Path
-
-AUTH_USER_MODEL = 'users.User'
+import string
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
@@ -28,7 +27,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'api',
     'reviews',
-    'users',
 ]
 
 MIDDLEWARE = [
@@ -123,4 +121,14 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
 }
+
+CONFIRMATION_CODE_LENGTH = 6
+CONFIRMATION_CODE_CHARS = string.digits
+MAX_USERNAME_LENGTH = 150
+MAX_EMAIL_LENGTH = 254
+FORBIDDEN_USERNAME = 'me'
+AUTH_USER_MODEL = 'reviews.User'
