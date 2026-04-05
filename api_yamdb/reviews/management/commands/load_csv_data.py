@@ -44,7 +44,9 @@ class Command(BaseCommand):
             if objects:
                 model.objects.bulk_create(objects)
         self.stdout.write(
-            self.style.SUCCESS(f'{filename} загружен (записей: {len(objects)})')
+            self.style.SUCCESS(
+                f'{filename} загружен (записей: {len(objects)})'
+            )
         )
 
     def import_titles(self, data_dir):
@@ -94,7 +96,9 @@ class Command(BaseCommand):
         filepath = os.path.join(data_dir, 'genre_title.csv')
         if not os.path.exists(filepath):
             self.stdout.write(
-                self.style.WARNING('Файл genre_title.csv не найден, пропускаем')
+                self.style.WARNING(
+                    'Файл genre_title.csv не найден, пропускаем'
+                )
             )
             return
 
