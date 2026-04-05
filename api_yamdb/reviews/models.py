@@ -5,6 +5,9 @@ from django.db import models
 from django.utils import timezone
 
 
+def current_year():
+    return timezone.now().year
+
 class User(AbstractUser):
     ROLE_USER = 'user'
     ROLE_MODERATOR = 'moderator'
@@ -87,14 +90,10 @@ class Genre(NameSlugModel):
 class Title(models.Model):
     """Модель для произведений."""
 
-    @staticmethod
-    def current_year():
-        return timezone.now().year
-
     name = models.CharField(max_length=256)
     year = models.IntegerField(
         validators=[
-            MaxValueValidator(current_year),
+            MaxValueValidator(current_year()),
         ]
     )
     description = models.TextField(blank=True)
@@ -140,6 +139,9 @@ class Review(BaseReviewComment):
     )
 
     class Meta(BaseReviewComment.Meta):
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
+        ordering = ['pub_date']
         constraints = [
             models.UniqueConstraint(
                 fields=['author', 'title'],
@@ -154,3 +156,7 @@ class Comment(BaseReviewComment):
         on_delete=models.CASCADE,
         related_name='comments'
     )
+        
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
