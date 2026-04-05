@@ -63,87 +63,99 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
-        read_only=True, slug_field='username'
-    )
+    author = serializers.SlugRelatedField(read_only=True, slug_field="username")
 
     class Meta:
-        fields = '__all__'
-        read_only_fields = ['review']
+        fields = "__all__"
+        read_only_fields = ["review"]
         model = Comment
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
-        read_only=True, slug_field='username'
-    )
+    author = serializers.SlugRelatedField(read_only=True, slug_field="username")
 
     class Meta:
-        fields = '__all__'
-        read_only_fields = ['title']
+        fields = "__all__"
+        read_only_fields = ["title_id"]
         model = Review
-
-    def validate(self, data):
-        request = self.context.get('request')
-        if request.method == 'POST' and request.user.is_authenticated:
-            title_id = request.parser_context.get('kwargs', {}).get('title_id')
-            if Review.objects.filter(
-                author=request.user, title_id=title_id
-            ).exists():
-                raise serializers.ValidationError(
-                    'You already reviewed this title.'
-                )
-        return data
+        validators = (
+            UniqueTogetherValidator(
+                queryset=Review.objects.all(),
+                fields=("author", "title_id"),
+                message="You already reviewed this title.",
+            ),
+        )
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ('name', 'slug')
-        lookup_field = 'slug'
-        extra_kwargs = {
-            'url': {'lookup_field': 'slug'}
-        }
+        fields = ("name", "slug")
 
 
 class GenreSerializer(serializers.ModelSerializer):
     """Сериализатор для жанров."""
+
     class Meta:
         model = Genre
-        fields = ('name', 'slug')
-        lookup_field = 'slug'
-        extra_kwargs = {
-            'url': {'lookup_field': 'slug'}
-        }
+        fields = ("name", "slug")
 
 
-class TitleSerializer(serializers.ModelSerializer):
+class TitleReadSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(read_only=True, many=True)
+    rating = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Title
+        fields = (
+            "id",
+            "name",
+            "year",
+            "rating",
+            "description",
+            "genre",
+            "category",
+        )
+
+
+class TitleWriteSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
     category = serializers.SlugRelatedField(
-        queryset=Category.objects.all(),
-        write_only=True,
-        slug_field='slug'
+        queryset=Category.objects.all(), slug_field="slug"
     )
     genre = serializers.SlugRelatedField(
-        queryset=Genre.objects.all(),
-        many=True,
-        write_only=True,
-        slug_field='slug'
+        many=True, queryset=Genre.objects.all(), slug_field="slug"
     )
 
     rating = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Title
-        fields = '__all__'
+        fields = (
+            "id",
+            "name",
+            "year",
+            "description",
+            "genre",
+            "category",
+        )
 
-    def to_representation(self, instance):
-        ret = super().to_representation(instance)
-        ret['category'] = CategorySerializer(instance.category).data
-        ret['genre'] = GenreSerializer(instance.genre.all(), many=True).data
-        return ret
 
-    def validate_role(self, value):
-        allowed_roles = ['user', 'moderator', 'admin']
-        if value not in allowed_roles:
-            raise serializers.ValidationError('Недопустимая роль')
-        return value
+# class TitleSerializer(serializers.ModelSerializer):
+#     category = serializers.SlugRelatedField(
+#         queryset=Category.objects.all(), write_only=True, slug_field="slug"
+#     )
+#     genre = serializers.SlugRelatedField(
+#         queryset=Genre.objects.all(), many=True, write_only=True, slug_field="slug"
+#     )
+
+#     class Meta:
+#         model = Title
+#         fields = "__all__"
+
+#     def to_representation(self, instance):
+#         ret = super().to_representation(instance)
+#         ret["category"] = CategorySerializer(instance.category).data
+#         ret["genre"] = GenreSerializer(instance.genre.all(), many=True).data
+#         return ret

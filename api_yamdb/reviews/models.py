@@ -1,7 +1,6 @@
 """Модели для приложения reviews."""
 
-from datetime import datetime
-
+from django.utils import timezone
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import AbstractUser
@@ -46,46 +45,60 @@ class User(AbstractUser):
         return self.username
 
 
-class RepresentModel(models.Model):
-    """Абстрактная модель для представления объектов с полем name."""
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        abstract = True
-
-
-class NameSlugModel(RepresentModel):
+class NameSlugModel(models.Model):
     """Абстрактная модель для объектов с полями name и slug."""
 
-    name = models.CharField(max_length=256)
-    slug = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(
+        max_length=256,
+        unique=True,
+        verbose_name="Имя",
+    )
+    slug = models.SlugField(
+        max_length=50,
+        unique=True,
+        verbose_name="Слаг",
+    )
 
     class Meta:
         abstract = True
+        ordering = ["name"]
 
 
 class Category(NameSlugModel):
     """Модель для категорий произведений."""
 
-    pass
+    class Meta:
+        verbose_name = "Категория"
+        verbose_name_plural = "Категории"
+        # ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
 class Genre(NameSlugModel):
     """Модель для жанров произведений."""
 
-    pass
+    class Meta:
+        verbose_name = "Жанр"
+        verbose_name_plural = "Жанры"
+        # ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
-class Title(RepresentModel):
+class Title(models.Model):
     """Модель для произведений."""
+
+    @staticmethod
+    def current_year():
+        return timezone.now().year
 
     name = models.CharField(max_length=256)
     year = models.IntegerField(
         validators=[
-            MinValueValidator(0),
-            MaxValueValidator(datetime.now().year),
+            MaxValueValidator(current_year),
         ]
     )
     description = models.TextField(blank=True)
@@ -93,6 +106,14 @@ class Title(RepresentModel):
         Category, on_delete=models.SET_NULL, null=True, related_name="titles"
     )
     genre = models.ManyToManyField(Genre, related_name="titles")
+
+    class Meta:
+        verbose_name = "Произведение"
+        verbose_name_plural = "Призведения"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
 class Review(models.Model):
@@ -105,10 +126,7 @@ class Review(models.Model):
     text = models.TextField()
     pub_date = models.DateTimeField(auto_now_add=True)
     score = models.IntegerField(
-        validators=[
-            MinValueValidator(0),
-            MaxValueValidator(10)
-        ],
+        validators=[MinValueValidator(0), MaxValueValidator(10)],
     )
 
     class Meta:
@@ -120,13 +138,9 @@ class Review(models.Model):
 
 
 class Comment(models.Model):
-    author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='comments'
-    )
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
     review = models.ForeignKey(
-        Review, on_delete=models.CASCADE, related_name='comments'
+        Review, on_delete=models.CASCADE, related_name="comments"
     )
     text = models.TextField()
-    pub_date = models.DateTimeField(
-        'Дата добавления', auto_now_add=True
-    )
+    pub_date = models.DateTimeField("Дата добавления", auto_now_add=True)
