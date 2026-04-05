@@ -2,11 +2,47 @@
 
 from django.utils import timezone
 from django.db import models
-from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 
 
-User = get_user_model()
+class User(AbstractUser):
+    ROLE_USER = 'user'
+    ROLE_MODERATOR = 'moderator'
+    ROLE_ADMIN = 'admin'
+    ROLES = (
+        (ROLE_USER, 'Пользователь'),
+        (ROLE_MODERATOR, 'Модератор'),
+        (ROLE_ADMIN, 'Администратор'),
+    )
+    role = models.CharField(
+        max_length=max(len(choice[0]) for choice in ROLES),
+        choices=ROLES,
+        default=ROLE_USER,
+        verbose_name='роль'
+    )
+    bio = models.TextField(blank=True, verbose_name='биография')
+    confirmation_code = models.CharField(
+        max_length=settings.CONFIRMATION_CODE_LENGTH,
+        blank=True,
+        null=True,
+        verbose_name='код подтверждения'
+    )
+    email = models.EmailField(unique=True, verbose_name='email')
+
+    class Meta:
+        verbose_name = 'пользователь'
+        verbose_name_plural = 'пользователи'
+
+    def is_admin(self):
+        return self.role == self.ROLE_ADMIN or self.is_superuser
+
+    def is_moderator(self):
+        return self.role == self.ROLE_MODERATOR
+
+    def __str__(self):
+        return self.username
 
 
 class NameSlugModel(models.Model):
@@ -81,15 +117,24 @@ class Title(models.Model):
 
 
 class Review(models.Model):
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviews")
-    title_id = models.ForeignKey(
-        Title, on_delete=models.CASCADE, related_name="reviews"
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='reviews'
+    )
+    title = models.ForeignKey(
+        Title, on_delete=models.CASCADE, related_name='reviews'
     )
     text = models.TextField()
     pub_date = models.DateTimeField(auto_now_add=True)
     score = models.IntegerField(
         validators=[MinValueValidator(0), MaxValueValidator(10)],
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['author', 'title'], name='unique_review'
+            )
+        ]
 
 
 class Comment(models.Model):

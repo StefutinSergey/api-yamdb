@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
 from django.contrib.auth import get_user_model
-
+from django.conf import settings
+from django.core.validators import RegexValidator
 
 from reviews.models import Comment, Review, Category, Title, Genre
 
@@ -11,25 +11,55 @@ User = get_user_model()
 
 
 class SignUpSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=150)
-    email = serializers.EmailField()
+    username = serializers.CharField(
+        max_length=settings.MAX_USERNAME_LENGTH,
+        required=True,
+        validators=[
+            RegexValidator(
+                regex=r'^[\w.@+-]+\Z',
+                message='Имя пользователя может содержать только латинские '
+                'буквы, цифры и символы'
+            )
+        ]
+    )
+    email = serializers.EmailField(
+        max_length=settings.MAX_EMAIL_LENGTH,
+        required=True
+    )
 
-    def validate_username(self, value):
-        if value.lower() == "me":
-            raise serializers.ValidationError('Имя пользователя "me" не разрешено.')
-        return value
+    def validate_username(self, username):
+        if username == settings.FORBIDDEN_USERNAME:
+            raise serializers.ValidationError(
+                f'Имя пользователя "{settings.FORBIDDEN_USERNAME}" '
+                f'не разрешено.'
+            )
+        return username
 
 
 class TokenSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    confirmation_code = serializers.CharField()
+    username = serializers.CharField(
+        max_length=settings.MAX_USERNAME_LENGTH,
+        required=True
+    )
+    confirmation_code = serializers.CharField(
+        max_length=settings.CONFIRMATION_CODE_LENGTH,
+        required=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\d+$',
+                message='Код подтверждения должен состоять только из цифр'
+            )
+        ]
+
+    )
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("username", "email", "first_name", "last_name", "bio", "role")
-        read_only_fields = ("role",)
+        fields = (
+            'username', 'email', 'first_name', 'last_name', 'bio', 'role'
+        )
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -97,6 +127,8 @@ class TitleWriteSerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(
         many=True, queryset=Genre.objects.all(), slug_field="slug"
     )
+
+    rating = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Title

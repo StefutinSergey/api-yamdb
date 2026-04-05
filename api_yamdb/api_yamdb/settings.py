@@ -1,6 +1,5 @@
 from pathlib import Path
-
-AUTH_USER_MODEL = "users.User"
+import string
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
@@ -18,18 +17,16 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "rest_framework",
-    "rest_framework_simplejwt",
-    "django_filters",
-    "api",
-    "reviews",
-    "users",
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'api',
+    'reviews',
 ]
 
 MIDDLEWARE = [
@@ -119,4 +116,22 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 
-STATICFILES_DIRS = ((BASE_DIR / "static/"),)
+STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+}
+
+CONFIRMATION_CODE_LENGTH = 6
+CONFIRMATION_CODE_CHARS = string.digits
+MAX_USERNAME_LENGTH = 150
+MAX_EMAIL_LENGTH = 254
+FORBIDDEN_USERNAME = 'me'
+AUTH_USER_MODEL = 'reviews.User'
