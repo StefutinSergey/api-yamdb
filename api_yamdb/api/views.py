@@ -1,41 +1,39 @@
 import random
 import string
-from django.db.models import Avg
-from rest_framework.views import APIView
-from rest_framework import filters, status, viewsets
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
+from django.db import IntegrityError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
-from django.conf import settings
-from django.db import IntegrityError
-
-from rest_framework import filters, mixins, status, viewsets, serializers
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, mixins, serializers, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
-from django_filters.rest_framework import DjangoFilterBackend
+
+from reviews.models import Category, Genre, Review, Title
+
 from .filters import TitleFilter
-
-
+from .permissions import (
+    IsAdmin,
+    IsAdminOrReadOnly,
+    IsAuthorOrModeratorOrAdminOrReadOnly,
+)
 from .serializers import (
-    SignUpSerializer,
-    UserSerializer,
-    TokenSerializer,
-    CommentSerializer,
-    ReviewSerializer,
     CategorySerializer,
+    CommentSerializer,
     GenreSerializer,
+    ReviewSerializer,
+    SignUpSerializer,
     TitleReadSerializer,
     TitleWriteSerializer,
+    TokenSerializer,
+    UserSerializer,
 )
-from .permissions import (
-    IsAdmin, IsAdminOrReadOnly, IsAuthorOrModeratorOrAdminOrReadOnly)
-from reviews.models import Review, Category, Genre, Title
 
 User = get_user_model()
 
@@ -107,7 +105,6 @@ class UserViewSet(viewsets.ModelViewSet):
         methods=['get', 'patch'],
         url_path='me',
         url_name='me',
-        # для /me/ нужна просто авторизация
         permission_classes=[IsAuthenticated]
     )
     def me(self, request):
@@ -127,9 +124,9 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthorOrModeratorOrAdminOrReadOnly]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_title(self):
         if not hasattr(self, '_title'):
@@ -147,9 +144,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-
     serializer_class = CommentSerializer
     permission_classes = [IsAuthorOrModeratorOrAdminOrReadOnly]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_review(self):
         if not hasattr(self, '_review'):
@@ -176,10 +173,10 @@ class BaseSlugViewSet(
     viewsets.GenericViewSet
 ):
     permission_classes = [IsAdminOrReadOnly]
-    http_method_names = ["get", "post", "put", "delete"]
-    lookup_field = "slug"
+    http_method_names = ['get', 'post', 'put', 'delete']
+    lookup_field = 'slug'
     filter_backends = [filters.SearchFilter]
-    search_fields = ["name"]
+    search_fields = ['name']
 
 
 class CategoryViewSet(BaseSlugViewSet):
@@ -190,27 +187,18 @@ class CategoryViewSet(BaseSlugViewSet):
 class GenreViewSet(BaseSlugViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = [IsAdminOrReadOnly]
-    http_method_names = ["get", "post", "put", "delete"]
-    lookup_field = "slug"
-    filter_backends = [filters.SearchFilter]
-    search_fields = ["name"]
-
-    def retrieve(self, request, *args, **kwargs):
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    """ViewSet для произведений (только администратор может редактировать)."""
-
-    queryset = Title.objects.annotate(rating=Avg("reviews__score")).order_by("name")
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')
+    ).order_by('name')
     permission_classes = [IsAdminOrReadOnly]
-    http_method_names = ["get", "post", "patch", "delete"]
-
+    http_method_names = ['get', 'post', 'patch', 'delete']
     filter_backends = [DjangoFilterBackend]
     filterset_class = TitleFilter
 
     def get_serializer_class(self):
-        if self.action in ("list", "retrieve"):
+        if self.action in ('list', 'retrieve'):
             return TitleReadSerializer
         return TitleWriteSerializer

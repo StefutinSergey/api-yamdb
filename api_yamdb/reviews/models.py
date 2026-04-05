@@ -1,10 +1,8 @@
-"""Модели для приложения reviews."""
-
-from django.utils import timezone
-from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
-from django.contrib.auth.models import AbstractUser
 from django.conf import settings
+from django.contrib.auth.models import AbstractUser
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -136,9 +134,7 @@ class Review(BaseReviewComment):
     )
     score = models.IntegerField(
         validators=[
-            MinValueValidator(
-                settings.REVIEW_SCORE_MIN
-            ),
+            MinValueValidator(settings.REVIEW_SCORE_MIN),
             MaxValueValidator(settings.REVIEW_SCORE_MAX),
         ]
     )
