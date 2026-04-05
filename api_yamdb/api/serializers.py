@@ -2,10 +2,9 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.core.validators import RegexValidator
+from django.shortcuts import get_object_or_404
 
 from reviews.models import Comment, Review, Category, Title, Genre
-
-from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
@@ -63,28 +62,37 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(read_only=True, slug_field="username")
+    author = serializers.SlugRelatedField(
+        read_only=True, slug_field='username'
+    )
 
     class Meta:
-        fields = "__all__"
-        read_only_fields = ["review"]
+        fields = ('id', 'text', 'author', 'pub_date')
         model = Comment
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(read_only=True, slug_field="username")
+    author = serializers.SlugRelatedField(
+        read_only=True, slug_field='username'
+    )
 
     class Meta:
-        fields = "__all__"
-        read_only_fields = ["title_id"]
+        fields = ('id', 'text', 'author', 'score', 'pub_date')
         model = Review
-        validators = (
-            UniqueTogetherValidator(
-                queryset=Review.objects.all(),
-                fields=("author", "title_id"),
-                message="You already reviewed this title.",
-            ),
-        )
+
+    def validate(self, data):
+        request = self.context.get('request')
+        if request.method != 'POST':
+            return data
+
+        title = get_object_or_404(Title, id=request.parser_context.get('kwargs', {})['title_id'])
+        if Review.objects.filter(
+            author=request.user, title_id=title.id
+        ).exists():
+            raise serializers.ValidationError(
+                f'"{title.name}" already reviewed by {request.user.username}'
+            )
+        return data
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -116,6 +124,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
             "description",
             "genre",
             "category",
+            "rating"
         )
 
 
@@ -128,8 +137,6 @@ class TitleWriteSerializer(serializers.ModelSerializer):
         many=True, queryset=Genre.objects.all(), slug_field="slug"
     )
 
-    rating = serializers.FloatField(read_only=True)
-
     class Meta:
         model = Title
         fields = (
@@ -140,22 +147,3 @@ class TitleWriteSerializer(serializers.ModelSerializer):
             "genre",
             "category",
         )
-
-
-# class TitleSerializer(serializers.ModelSerializer):
-#     category = serializers.SlugRelatedField(
-#         queryset=Category.objects.all(), write_only=True, slug_field="slug"
-#     )
-#     genre = serializers.SlugRelatedField(
-#         queryset=Genre.objects.all(), many=True, write_only=True, slug_field="slug"
-#     )
-
-#     class Meta:
-#         model = Title
-#         fields = "__all__"
-
-#     def to_representation(self, instance):
-#         ret = super().to_representation(instance)
-#         ret["category"] = CategorySerializer(instance.category).data
-#         ret["genre"] = GenreSerializer(instance.genre.all(), many=True).data
-#         return ret

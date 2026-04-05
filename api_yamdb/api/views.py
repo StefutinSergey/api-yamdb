@@ -33,8 +33,9 @@ from .serializers import (
     TitleReadSerializer,
     TitleWriteSerializer,
 )
-from .permissions import IsAdmin, IsOwnerOrReadOnly, IsAdminOrReadOnly
-from reviews.models import Comment, Review, Category, Genre, Title
+from .permissions import (
+    IsAdmin, IsAdminOrReadOnly, IsAuthorOrModeratorOrAdminOrReadOnly)
+from reviews.models import Review, Category, Genre, Title
 
 User = get_user_model()
 
@@ -213,19 +214,3 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.action in ("list", "retrieve"):
             return TitleReadSerializer
         return TitleWriteSerializer
-
-    # def get_queryset(self):
-    #     queryset = super().get_queryset()
-    #     genre_slug = self.request.query_params.get("genre")
-    #     if genre_slug:
-    #         queryset = queryset.filter(genre__slug=genre_slug)
-    #     category_slug = self.request.query_params.get("category")
-    #     if category_slug:
-    #         queryset = queryset.filter(category__slug=category_slug)
-    #     year = self.request.query_params.get("year")
-    #     if year:
-    #         queryset = queryset.filter(year=year)
-    #     name = self.request.query_params.get("name")
-    #     if name:
-    #         queryset = queryset.filter(name=name)
-    #     return queryset
