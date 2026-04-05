@@ -28,7 +28,9 @@ class Command(BaseCommand):
     def import_model(self, model, filename, data_dir):
         filepath = os.path.join(data_dir, filename)
         if not os.path.exists(filepath):
-            self.stdout.write(self.style.WARNING(f'Файл {filename} не найден, пропускаем'))
+            self.stdout.write(
+                self.style.WARNING(f'Файл {filename} не найден, пропускаем')
+            )
             return
 
         self.stdout.write(f'Загрузка {filename}...')
@@ -41,12 +43,16 @@ class Command(BaseCommand):
                 objects.append(model(**row))
             if objects:
                 model.objects.bulk_create(objects)
-        self.stdout.write(self.style.SUCCESS(f'{filename} загружен (записей: {len(objects)})'))
+        self.stdout.write(
+            self.style.SUCCESS(f'{filename} загружен (записей: {len(objects)})')
+        )
 
     def import_titles(self, data_dir):
         filepath = os.path.join(data_dir, 'titles.csv')
         if not os.path.exists(filepath):
-            self.stdout.write(self.style.WARNING('Файл titles.csv не найден, пропускаем'))
+            self.stdout.write(
+                self.style.WARNING('Файл titles.csv не найден, пропускаем')
+            )
             return
 
         self.stdout.write('Загрузка titles.csv...')
@@ -60,7 +66,8 @@ class Command(BaseCommand):
                     category = Category.objects.get(id=int(category_id))
                 except Category.DoesNotExist:
                     self.stdout.write(self.style.ERROR(
-                        f'Категория с id={category_id} не найдена, запись пропущена: {row}'
+                        f'Категория с id={category_id} не найдена, '
+                        f'запись пропущена: {row}'
                     ))
                     errors += 1
                     continue
@@ -75,15 +82,20 @@ class Command(BaseCommand):
         if titles:
             Title.objects.bulk_create(titles)
             self.stdout.write(self.style.SUCCESS(
-                f'titles.csv загружен (записей: {len(titles)}, пропущено: {errors})'
+                f'titles.csv загружен (записей: {len(titles)}, '
+                f'пропущено: {errors})'
             ))
         else:
-            self.stdout.write(self.style.ERROR('Не загружено ни одного произведения'))
+            self.stdout.write(
+                self.style.ERROR('Не загружено ни одного произведения')
+            )
 
     def import_genre_title_relations(self, data_dir):
         filepath = os.path.join(data_dir, 'genre_title.csv')
         if not os.path.exists(filepath):
-            self.stdout.write(self.style.WARNING('Файл genre_title.csv не найден, пропускаем'))
+            self.stdout.write(
+                self.style.WARNING('Файл genre_title.csv не найден, пропускаем')
+            )
             return
 
         self.stdout.write('Загрузка связей жанр-произведение...')
@@ -102,12 +114,16 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR(
                         f'Ошибка в строке {row}: {e}'
                     ))
-        self.stdout.write(self.style.SUCCESS(f'Связей загружено: {count}, ошибок: {errors}'))
+        self.stdout.write(self.style.SUCCESS(
+            f'Связей загружено: {count}, ошибок: {errors}'
+        ))
 
     def import_reviews(self, data_dir):
         filepath = os.path.join(data_dir, 'review.csv')
         if not os.path.exists(filepath):
-            self.stdout.write(self.style.WARNING('Файл review.csv не найден, пропускаем'))
+            self.stdout.write(
+                self.style.WARNING('Файл review.csv не найден, пропускаем')
+            )
             return
 
         self.stdout.write('Загрузка review.csv...')
@@ -123,7 +139,9 @@ class Command(BaseCommand):
                     title = Title.objects.get(id=int(title_id))
                 except (User.DoesNotExist, Title.DoesNotExist) as e:
                     errors += 1
-                    self.stdout.write(self.style.ERROR(f'Ошибка в строке {row}: {e}'))
+                    self.stdout.write(self.style.ERROR(
+                        f'Ошибка в строке {row}: {e}'
+                    ))
                     continue
 
                 row['author'] = author
@@ -137,13 +155,16 @@ class Command(BaseCommand):
         if reviews:
             Review.objects.bulk_create(reviews)
             self.stdout.write(self.style.SUCCESS(
-                f'review.csv загружен (записей: {len(reviews)}, пропущено: {errors})'
+                f'review.csv загружен (записей: {len(reviews)}, '
+                f'пропущено: {errors})'
             ))
 
     def import_comments(self, data_dir):
         filepath = os.path.join(data_dir, 'comments.csv')
         if not os.path.exists(filepath):
-            self.stdout.write(self.style.WARNING('Файл comments.csv не найден, пропускаем'))
+            self.stdout.write(
+                self.style.WARNING('Файл comments.csv не найден, пропускаем')
+            )
             return
 
         self.stdout.write('Загрузка comments.csv...')
@@ -159,7 +180,9 @@ class Command(BaseCommand):
                     review = Review.objects.get(id=int(review_id))
                 except (User.DoesNotExist, Review.DoesNotExist) as e:
                     errors += 1
-                    self.stdout.write(self.style.ERROR(f'Ошибка в строке {row}: {e}'))
+                    self.stdout.write(self.style.ERROR(
+                        f'Ошибка в строке {row}: {e}'
+                    ))
                     continue
 
                 row['author'] = author
@@ -171,5 +194,6 @@ class Command(BaseCommand):
         if comments:
             Comment.objects.bulk_create(comments)
             self.stdout.write(self.style.SUCCESS(
-                f'comments.csv загружен (записей: {len(comments)}, пропущено: {errors})'
+                f'comments.csv загружен (записей: {len(comments)}, '
+                f'пропущено: {errors})'
             ))

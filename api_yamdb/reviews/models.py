@@ -8,6 +8,7 @@ from django.utils import timezone
 def current_year():
     return timezone.now().year
 
+
 class User(AbstractUser):
     ROLE_USER = 'user'
     ROLE_MODERATOR = 'moderator'
@@ -156,7 +157,7 @@ class Comment(BaseReviewComment):
         on_delete=models.CASCADE,
         related_name='comments'
     )
-        
+
     class Meta:
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
