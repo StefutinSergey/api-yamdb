@@ -134,7 +134,7 @@ class BaseAuthorTextPubDateModel(models.Model):
 
 class Review(BaseAuthorTextPubDateModel):
     title = models.ForeignKey(
-        'Title',
+        Title,
         on_delete=models.CASCADE,
     )
     score = models.IntegerField(
@@ -155,6 +155,7 @@ class Review(BaseAuthorTextPubDateModel):
                 name='unique_review'
             )
         ]
+        default_related_name = 'reviews'
 
 
 class Comment(BaseAuthorTextPubDateModel):
@@ -166,4 +167,5 @@ class Comment(BaseAuthorTextPubDateModel):
     class Meta:
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
+        default_related_name = 'comments'
 

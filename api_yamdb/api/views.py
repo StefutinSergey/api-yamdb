@@ -16,7 +16,6 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
 from reviews.models import Category, Genre, Review, Title
-
 from .filters import TitleFilter
 from .permissions import (
     IsAdmin,
@@ -107,7 +106,7 @@ class UserViewSet(viewsets.ModelViewSet):
         url_name=settings.USER_PAGE_URL,
         permission_classes=[IsAuthenticated]
     )
-    def me(self, request):
+    def profile(self, request):
         user = request.user
         if request.method == 'GET':
             serializer = self.get_serializer(user)
