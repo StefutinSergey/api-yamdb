@@ -1,5 +1,4 @@
 import random
-import string
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -8,13 +7,14 @@ from django.db import IntegrityError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, serializers, status, viewsets
+from rest_framework import filters, mixins, serializers, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
+from reviews.constants import CONFIRMATION_CODE_CHARS, CONFIRMATION_CODE_LENGTH
 from reviews.models import Category, Genre, Review, Title
 from .filters import TitleFilter
 from .permissions import (
@@ -56,8 +56,8 @@ def signup(request):
         raise serializers.ValidationError(
             {'username': 'Пользователь с таким username уже существует.'}
         )
-    chars = settings.CONFIRMATION_CODE_CHARS
-    length = settings.CONFIRMATION_CODE_LENGTH
+    chars = CONFIRMATION_CODE_CHARS
+    length = CONFIRMATION_CODE_LENGTH
     confirmation_code = ''.join(random.choices(chars, k=length))
     user.confirmation_code = confirmation_code
     user.save()

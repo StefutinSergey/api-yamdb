@@ -5,7 +5,11 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from reviews.models import Category, Comment, Genre, Review, Title
-from reviews.constants import MAX_EMAIL_LENGTH, MAX_USERNAME_LENGTH
+from reviews.constants import (
+    CONFIRMATION_CODE_LENGTH,
+    MAX_EMAIL_LENGTH,
+    MAX_USERNAME_LENGTH
+)
 
 User = get_user_model()
 
@@ -44,7 +48,7 @@ class TokenSerializer(serializers.Serializer):
         required=True
     )
     confirmation_code = serializers.CharField(
-        max_length=settings.CONFIRMATION_CODE_LENGTH,
+        max_length=CONFIRMATION_CODE_LENGTH,
         required=True,
         validators=[
             RegexValidator(

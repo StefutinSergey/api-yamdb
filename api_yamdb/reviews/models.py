@@ -1,10 +1,17 @@
-from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
+from django.core.validators import (
+    MaxValueValidator, MinValueValidator, RegexValidator
+)
 from django.db import models
 from django.utils import timezone
 
-from .constants import REVIEW_SCORE_MIN, REVIEW_SCORE_MAX
+from .constants import (
+    CONFIRMATION_CODE_LENGTH,
+    MAX_USERNAME_LENGTH,
+    MAX_EMAIL_LENGTH,
+    REVIEW_SCORE_MIN,
+    REVIEW_SCORE_MAX
+)
 
 
 def current_year():
@@ -13,7 +20,7 @@ def current_year():
 
 class User(AbstractUser):
     username = models.CharField(
-        max_length=settings.MAX_USERNAME_LENGTH,
+        max_length=MAX_USERNAME_LENGTH,
         unique=True,
         validators=[
             RegexValidator(
@@ -40,12 +47,16 @@ class User(AbstractUser):
     )
     bio = models.TextField(blank=True, verbose_name='описание')
     confirmation_code = models.CharField(
-        max_length=settings.CONFIRMATION_CODE_LENGTH,
+        max_length=CONFIRMATION_CODE_LENGTH,
         blank=True,
         null=True,
         verbose_name='код подтверждения'
     )
-    email = models.EmailField(unique=True, verbose_name='email')
+    email = models.EmailField(
+        max_length=MAX_EMAIL_LENGTH,
+        unique=True,
+        verbose_name='email'
+    )
 
     class Meta:
         verbose_name = 'пользователь'
