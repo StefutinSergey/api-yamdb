@@ -4,6 +4,8 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
+from .constants import REVIEW_SCORE_MIN, REVIEW_SCORE_MAX
+
 
 def current_year():
     return timezone.now().year
@@ -112,34 +114,38 @@ class Title(models.Model):
         return self.name
 
 
-class BaseReviewComment(models.Model):
+class BaseAuthorTextPubDateModel(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='%(class)ss'
+        related_name='%(class)ss',
+        verbose_name='автор'
     )
-    text = models.TextField()
-    pub_date = models.DateTimeField(auto_now_add=True)
+    text = models.TextField(verbose_name='текст')
+    pub_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='дата публикации'
+    )
 
     class Meta:
         abstract = True
         ordering = ['-pub_date']
 
 
-class Review(BaseReviewComment):
+class Review(BaseAuthorTextPubDateModel):
     title = models.ForeignKey(
         'Title',
         on_delete=models.CASCADE,
-        related_name='reviews'
     )
     score = models.IntegerField(
         validators=[
-            MinValueValidator(settings.REVIEW_SCORE_MIN),
-            MaxValueValidator(settings.REVIEW_SCORE_MAX),
-        ]
+            MinValueValidator(REVIEW_SCORE_MIN),
+            MaxValueValidator(REVIEW_SCORE_MAX),
+        ],
+        verbose_name='оценка'
     )
 
-    class Meta(BaseReviewComment.Meta):
+    class Meta(BaseAuthorTextPubDateModel.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         ordering = ['pub_date']
@@ -149,15 +155,16 @@ class Review(BaseReviewComment):
                 name='unique_review'
             )
         ]
+        default_related_name = 'reviews'
 
 
-class Comment(BaseReviewComment):
+class Comment(BaseAuthorTextPubDateModel):
     review = models.ForeignKey(
         Review,
-        on_delete=models.CASCADE,
-        related_name='comments'
+        on_delete=models.CASCADE
     )
 
     class Meta:
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
+        default_related_name = 'comments'

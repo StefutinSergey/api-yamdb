@@ -103,8 +103,8 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=['get', 'patch'],
-        url_path='me',
-        url_name='me',
+        url_path=settings.USER_PAGE_URL,
+        url_name=settings.USER_PAGE_URL,
         permission_classes=[IsAuthenticated]
     )
     def me(self, request):

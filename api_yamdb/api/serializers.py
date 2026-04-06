@@ -5,13 +5,14 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from reviews.models import Category, Comment, Genre, Review, Title
+from reviews.constants import MAX_EMAIL_LENGTH, MAX_USERNAME_LENGTH
 
 User = get_user_model()
 
 
 class SignUpSerializer(serializers.Serializer):
     username = serializers.CharField(
-        max_length=settings.MAX_USERNAME_LENGTH,
+        max_length=MAX_USERNAME_LENGTH,
         required=True,
         validators=[
             RegexValidator(
@@ -22,14 +23,14 @@ class SignUpSerializer(serializers.Serializer):
         ]
     )
     email = serializers.EmailField(
-        max_length=settings.MAX_EMAIL_LENGTH,
+        max_length=MAX_EMAIL_LENGTH,
         required=True
     )
 
     def validate_username(self, username):
-        if username == settings.FORBIDDEN_USERNAME:
+        if username == settings.USER_PAGE_URL:
             raise serializers.ValidationError(
-                f'Имя пользователя "{settings.FORBIDDEN_USERNAME}" '
+                f'Имя пользователя "{settings.USER_PAGE_URL}" '
                 f'не разрешено.'
             )
         return username
@@ -37,7 +38,7 @@ class SignUpSerializer(serializers.Serializer):
 
 class TokenSerializer(serializers.Serializer):
     username = serializers.CharField(
-        max_length=settings.MAX_USERNAME_LENGTH,
+        max_length=MAX_USERNAME_LENGTH,
         required=True
     )
     confirmation_code = serializers.CharField(
