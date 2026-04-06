@@ -118,7 +118,6 @@ class BaseAuthorTextPubDateModel(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='%(class)ss',
         verbose_name='автор'
     )
     text = models.TextField(verbose_name='текст')
@@ -130,6 +129,7 @@ class BaseAuthorTextPubDateModel(models.Model):
     class Meta:
         abstract = True
         ordering = ['-pub_date']
+        default_related_name = '%(class)ss'
 
 
 class Review(BaseAuthorTextPubDateModel):
@@ -155,7 +155,6 @@ class Review(BaseAuthorTextPubDateModel):
                 name='unique_review'
             )
         ]
-        default_related_name = 'reviews'
 
 
 class Comment(BaseAuthorTextPubDateModel):
@@ -167,4 +166,4 @@ class Comment(BaseAuthorTextPubDateModel):
     class Meta:
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
-        default_related_name = 'comments'
+
