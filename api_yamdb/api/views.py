@@ -45,29 +45,26 @@ def signup(request):
     username = serializer.validated_data['username']
     email = serializer.validated_data['email']
     try:
-        user, created = User.objects.get_or_create(
-            username=username, defaults={'email': email}
+        user, _ = User.objects.get_or_create(
+            username=username, email=email
         )
     except IntegrityError:
-        return Response(
+        raise serializers.ValidationError(
             {'email': 'Пользователь с таким email уже существует.'},
-            status=status.HTTP_400_BAD_REQUEST
         )
-
-    if not created and user.email != email:
-        return Response(
-            {'username': 'Пользователь с таким username уже существует.'},
-            status=status.HTTP_400_BAD_REQUEST
+    if User.objects.filter(username=username).exclude(email=email).exists():
+        raise serializers.ValidationError(
+            {'username': 'Пользователь с таким username уже существует.'}
         )
-    chars = getattr(settings, 'CONFIRMATION_CODE_CHARS', string.digits)
-    length = getattr(settings, 'CONFIRMATION_CODE_LENGTH', 6)
+    chars = settings.CONFIRMATION_CODE_CHARS
+    length = settings.CONFIRMATION_CODE_LENGTH
     confirmation_code = ''.join(random.choices(chars, k=length))
     user.confirmation_code = confirmation_code
     user.save()
     send_mail(
         subject='Код подтверждения',
         message=f'Ваш код: {confirmation_code}',
-        from_email=None,
+        from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[email],
     )
     return Response(serializer.data)
@@ -81,11 +78,11 @@ def token(request):
     username = serializer.validated_data['username']
     code = serializer.validated_data['confirmation_code']
     user = get_object_or_404(User, username=username)
-    if user.confirmation_code != code:
+    confirmation_code = user.confirmation_code
+    user.confirmation_code = ''
+    if confirmation_code != code:
         raise serializers.ValidationError(
             {'detail': 'Неверный код подтверждения'})
-    user.confirmation_code = None
-    user.save()
     return Response({'access': str(AccessToken.for_user(user))})
 
 
@@ -109,17 +106,13 @@ class UserViewSet(viewsets.ModelViewSet):
     def profile(self, request):
         user = request.user
         if request.method == 'GET':
-            serializer = self.get_serializer(user)
-            return Response(serializer.data)
-        elif request.method == 'PATCH':
-            serializer = self.get_serializer(
-                user, data=request.data, partial=True
-            )
-            serializer.is_valid(raise_exception=True)
-            if 'role' in serializer.validated_data:
-                del serializer.validated_data['role']
-            serializer.save()
-            return Response(serializer.data)
+            return Response(self.get_serializer(user).data)
+        serializer = self.get_serializer(
+            user, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(role=user.role)
+        return Response(serializer.data)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

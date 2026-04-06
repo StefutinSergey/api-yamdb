@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
 
@@ -12,6 +12,18 @@ def current_year():
 
 
 class User(AbstractUser):
+    username = models.CharField(
+        max_length=settings.MAX_USERNAME_LENGTH,
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r'^[\w.@+-]+\Z',
+                message='Имя пользователя может содержать только латинские '
+                'буквы, цифры и символы'
+            ),
+        ],
+        verbose_name='имя пользователя'
+    )
     ROLE_USER = 'user'
     ROLE_MODERATOR = 'moderator'
     ROLE_ADMIN = 'admin'
@@ -26,7 +38,7 @@ class User(AbstractUser):
         default=ROLE_USER,
         verbose_name='роль'
     )
-    bio = models.TextField(blank=True, verbose_name='биография')
+    bio = models.TextField(blank=True, verbose_name='описание')
     confirmation_code = models.CharField(
         max_length=settings.CONFIRMATION_CODE_LENGTH,
         blank=True,
@@ -40,7 +52,9 @@ class User(AbstractUser):
         verbose_name_plural = 'пользователи'
 
     def is_admin(self):
-        return self.role == self.ROLE_ADMIN or self.is_superuser
+        return (
+            self.role == self.ROLE_ADMIN or self.is_superuser or self.is_staff
+        )
 
     def is_moderator(self):
         return self.role == self.ROLE_MODERATOR
@@ -168,4 +182,3 @@ class Comment(BaseAuthorTextPubDateModel):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
         default_related_name = 'comments'
-
