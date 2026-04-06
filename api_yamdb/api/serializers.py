@@ -9,18 +9,25 @@ from reviews.constants import MAX_EMAIL_LENGTH, MAX_USERNAME_LENGTH
 
 User = get_user_model()
 
+def validate_username(username):
+        if username == settings.USER_PAGE_URL:
+            raise serializers.ValidationError(
+                f'Имя пользователя "{settings.USER_PAGE_URL}" '
+                f'не разрешено.'
+            )
+        validator = RegexValidator(
+                regex=r'^[\w.@+-]+\Z',
+                message='Имя пользователя может содержать только латинские '
+                'буквы, цифры и символы'
+            )
+        validator(username)
+        return username
+        
 
 class SignUpSerializer(serializers.Serializer):
     username = serializers.CharField(
         max_length=MAX_USERNAME_LENGTH,
         required=True,
-        validators=[
-            RegexValidator(
-                regex=r'^[\w.@+-]+\Z',
-                message='Имя пользователя может содержать только латинские '
-                'буквы, цифры и символы'
-            )
-        ]
     )
     email = serializers.EmailField(
         max_length=MAX_EMAIL_LENGTH,
@@ -28,12 +35,7 @@ class SignUpSerializer(serializers.Serializer):
     )
 
     def validate_username(self, username):
-        if username == settings.USER_PAGE_URL:
-            raise serializers.ValidationError(
-                f'Имя пользователя "{settings.USER_PAGE_URL}" '
-                f'не разрешено.'
-            )
-        return username
+        return validate_username(username)
 
 
 class TokenSerializer(serializers.Serializer):
@@ -52,6 +54,9 @@ class TokenSerializer(serializers.Serializer):
         ]
     )
 
+    def validate_username(self, username):
+        return validate_username(username)
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -60,6 +65,8 @@ class UserSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
 
+    def validate_username(self, username):
+        return validate_username(username)
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(

@@ -22,8 +22,12 @@ router_v1.register(
     basename='title-review-comment'
 )
 
+auth_urls = [
+    path('signup/', signup, name='signup'),
+    path('token/', token, name='token'),
+]
+
 urlpatterns = [
-    path('auth/signup/', signup, name='signup'),
-    path('auth/token/', token, name='token'),
+    path('auth/', include(auth_urls)),
     path('', include(router_v1.urls)),
 ]
