@@ -46,6 +46,12 @@ python3 -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+Создайте в корне проекта файл `.env` и добавьте в него секретный ключ Django:
+
+```
+KEY=ваш_секретный_ключ
+```
+
 Выполнить миграции:
 
 ```
