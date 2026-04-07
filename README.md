@@ -46,7 +46,7 @@ python3 -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Создать в корне проекта файл `.env` и добавить в него секретный ключ Django:
+Создать в папке api-yamdb файл `.env` и добавить в него секретный ключ Django:
 
 ```
 KEY=ваш_секретный_ключ
