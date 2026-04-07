@@ -136,3 +136,4 @@ REST_FRAMEWORK = {
 DEFAULT_FROM_EMAIL = 'webmaster@localhost'
 USER_PAGE_URL = 'me'
 AUTH_USER_MODEL = 'reviews.User'
+USERNAME_REGEX = r'^[\w.@+-]+\Z'

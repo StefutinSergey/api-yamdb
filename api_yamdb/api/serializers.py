@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from reviews.models import Category, Comment, Genre, Review, Title
@@ -11,35 +10,20 @@ from reviews.constants import (
     MAX_USERNAME_LENGTH,
 )
 
+from .mixins import UsernameValidationMixin
+
 User = get_user_model()
 
 
-def validate_username(username):
-    if username == settings.USER_PAGE_URL:
-        raise serializers.ValidationError(
-            f'Имя пользователя "{settings.USER_PAGE_URL}" ' f"не разрешено."
-        )
-    validator = RegexValidator(
-        regex=r"^[\w.@+-]+\Z",
-        message="Имя пользователя может содержать только латинские "
-        "буквы, цифры и символы",
-    )
-    validator(username)
-    return username
-
-
-class SignUpSerializer(serializers.Serializer):
+class SignUpSerializer(UsernameValidationMixin, serializers.Serializer):
     username = serializers.CharField(
         max_length=MAX_USERNAME_LENGTH,
         required=True,
     )
     email = serializers.EmailField(max_length=MAX_EMAIL_LENGTH, required=True)
 
-    def validate_username(self, username):
-        return validate_username(username)
 
-
-class TokenSerializer(serializers.Serializer):
+class TokenSerializer(UsernameValidationMixin, serializers.Serializer):
     username = serializers.CharField(max_length=MAX_USERNAME_LENGTH, required=True)
     confirmation_code = serializers.CharField(
         max_length=CONFIRMATION_CODE_LENGTH,
@@ -47,22 +31,16 @@ class TokenSerializer(serializers.Serializer):
         validators=[
             RegexValidator(
                 regex=r"^\d+$",
-                message="Код подтверждения должен состоять только из цифр",
+                message='Код подтверждения должен состоять только из цифр'
             )
         ],
     )
 
-    def validate_username(self, username):
-        return validate_username(username)
 
-
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(UsernameValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ("username", "email", "first_name", "last_name", "bio", "role")
-
-    def validate_username(self, username):
-        return validate_username(username)
 
 
 class CommentSerializer(serializers.ModelSerializer):
