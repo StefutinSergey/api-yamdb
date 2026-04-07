@@ -1,12 +1,18 @@
 from pathlib import Path
+import os
 import string
+
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "p&l%385148kslhtyn^##a1)ilz@4zqj=rq&agdol^##zgl9(vs"
+SECRET_KEY = os.getenv('KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -28,8 +34,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
-    'api',
     'reviews',
+    'api',
 ]
 
 MIDDLEWARE = [
@@ -132,9 +138,6 @@ REST_FRAMEWORK = {
     ],
 }
 
-CONFIRMATION_CODE_LENGTH = 6
-CONFIRMATION_CODE_CHARS = string.digits
-MAX_USERNAME_LENGTH = 150
-MAX_EMAIL_LENGTH = 254
-FORBIDDEN_USERNAME = 'me'
+DEFAULT_FROM_EMAIL = 'webmaster@localhost'
+USER_PAGE_URL = 'me'
 AUTH_USER_MODEL = 'reviews.User'

@@ -1,8 +1,8 @@
 ### Список разработчиков
 
-- **Юрий Звонарёв** — zvonarov.2003
-- **Максим Мазанько** — mr.maxxxy
-- **Сергей Стефутин** — sergeistefutin
+- **Юрий Звонарёв** — [zvonarov.2003](https://app.pachca.com/chats?user_id=662965)
+- **Максим Мазанько** — [mr.maxxxy](https://app.pachca.com/chats?user_id=581641)
+- **Сергей Стефутин** — [sergeistefutin](https://app.pachca.com/chats?user_id=662957)
 
 ### Технологический стек
 
@@ -44,6 +44,12 @@ python3 -m pip install --upgrade pip
 
 ```
 pip install -r requirements.txt
+```
+
+Создать в корне проекта (папка api-yamdb) файл `.env` и добавить в него секретный ключ Django:
+
+```
+KEY=ваш_секретный_ключ
 ```
 
 Выполнить миграции:

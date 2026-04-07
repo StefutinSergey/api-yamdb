@@ -1,5 +1,4 @@
 import random
-import string
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -8,15 +7,15 @@ from django.db import IntegrityError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, serializers, status, viewsets
+from rest_framework import filters, mixins, serializers, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
+from reviews.constants import CONFIRMATION_CODE_CHARS, CONFIRMATION_CODE_LENGTH
 from reviews.models import Category, Genre, Review, Title
-
 from .filters import TitleFilter
 from .permissions import (
     IsAdmin,
@@ -46,29 +45,26 @@ def signup(request):
     username = serializer.validated_data['username']
     email = serializer.validated_data['email']
     try:
-        user, created = User.objects.get_or_create(
-            username=username, defaults={'email': email}
+        user, _ = User.objects.get_or_create(
+            username=username, email=email
         )
     except IntegrityError:
-        return Response(
+        raise serializers.ValidationError(
             {'email': 'Пользователь с таким email уже существует.'},
-            status=status.HTTP_400_BAD_REQUEST
         )
-
-    if not created and user.email != email:
-        return Response(
-            {'username': 'Пользователь с таким username уже существует.'},
-            status=status.HTTP_400_BAD_REQUEST
+    if User.objects.filter(username=username).exclude(email=email).exists():
+        raise serializers.ValidationError(
+            {'username': 'Пользователь с таким username уже существует.'}
         )
-    chars = getattr(settings, 'CONFIRMATION_CODE_CHARS', string.digits)
-    length = getattr(settings, 'CONFIRMATION_CODE_LENGTH', 6)
+    chars = CONFIRMATION_CODE_CHARS
+    length = CONFIRMATION_CODE_LENGTH
     confirmation_code = ''.join(random.choices(chars, k=length))
     user.confirmation_code = confirmation_code
     user.save()
     send_mail(
         subject='Код подтверждения',
         message=f'Ваш код: {confirmation_code}',
-        from_email=None,
+        from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[email],
     )
     return Response(serializer.data)
@@ -82,11 +78,11 @@ def token(request):
     username = serializer.validated_data['username']
     code = serializer.validated_data['confirmation_code']
     user = get_object_or_404(User, username=username)
-    if user.confirmation_code != code:
+    confirmation_code = user.confirmation_code
+    user.confirmation_code = ''
+    if confirmation_code != code:
         raise serializers.ValidationError(
             {'detail': 'Неверный код подтверждения'})
-    user.confirmation_code = None
-    user.save()
     return Response({'access': str(AccessToken.for_user(user))})
 
 
@@ -103,24 +99,20 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=['get', 'patch'],
-        url_path='me',
-        url_name='me',
+        url_path=settings.USER_PAGE_URL,
+        url_name=settings.USER_PAGE_URL,
         permission_classes=[IsAuthenticated]
     )
-    def me(self, request):
+    def profile(self, request):
         user = request.user
         if request.method == 'GET':
-            serializer = self.get_serializer(user)
-            return Response(serializer.data)
-        elif request.method == 'PATCH':
-            serializer = self.get_serializer(
-                user, data=request.data, partial=True
-            )
-            serializer.is_valid(raise_exception=True)
-            if 'role' in serializer.validated_data:
-                del serializer.validated_data['role']
-            serializer.save()
-            return Response(serializer.data)
+            return Response(self.get_serializer(user).data)
+        serializer = self.get_serializer(
+            user, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(role=user.role)
+        return Response(serializer.data)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
