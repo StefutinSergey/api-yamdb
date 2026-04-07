@@ -1,6 +1,6 @@
 from pathlib import Path
 import os
-
+import string
 from dotenv import load_dotenv
 
 
@@ -133,6 +133,8 @@ REST_FRAMEWORK = {
     ],
 }
 
+CONFIRMATION_CODE_CHARS = string.digits
+CONFIRMATION_CODE_LENGTH = 6
 DEFAULT_FROM_EMAIL = 'webmaster@localhost'
 USER_PAGE_URL = 'me'
 AUTH_USER_MODEL = 'reviews.User'
