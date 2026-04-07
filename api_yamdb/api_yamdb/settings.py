@@ -1,6 +1,5 @@
 from pathlib import Path
 import os
-import string
 
 from dotenv import load_dotenv
 
