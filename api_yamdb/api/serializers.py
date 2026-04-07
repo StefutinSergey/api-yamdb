@@ -138,6 +138,3 @@ class TitleWriteSerializer(TitleBaseSerializer):
     genre = serializers.SlugRelatedField(
         many=True, queryset=Genre.objects.all(), slug_field="slug"
     )
-
-    class Meta(TitleReadSerializer.Meta):
-        fields = TitleBaseSerializer.Meta.fields + ("rating",)
