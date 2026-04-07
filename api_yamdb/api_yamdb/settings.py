@@ -15,9 +15,6 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-REVIEW_SCORE_MIN = 1
-REVIEW_SCORE_MAX = 10
-
 ALLOWED_HOSTS = ["*"]
 
 
