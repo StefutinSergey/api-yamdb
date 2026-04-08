@@ -6,7 +6,6 @@ from django.shortcuts import get_object_or_404
 
 from reviews.models import Category, Comment, Genre, Review, Title
 from reviews.constants import (
-    CONFIRMATION_CODE_LENGTH,
     MAX_EMAIL_LENGTH,
     MAX_USERNAME_LENGTH,
 )
@@ -27,11 +26,11 @@ class SignUpSerializer(UsernameValidationMixin, serializers.Serializer):
 class TokenSerializer(UsernameValidationMixin, serializers.Serializer):
     username = serializers.CharField(max_length=MAX_USERNAME_LENGTH, required=True)
     confirmation_code = serializers.CharField(
-        max_length=CONFIRMATION_CODE_LENGTH,
+        max_length=settings.CONFIRMATION_CODE_LENGTH,
         required=True,
         validators=[
             RegexValidator(
-                regex=r"^\d+$",
+                regex=settings.USERNAME_REGEX,
                 message='Код подтверждения должен состоять только из цифр'
             )
         ],
