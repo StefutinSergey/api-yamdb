@@ -11,6 +11,7 @@ from .constants import (
     REVIEW_SCORE_MIN,
     REVIEW_SCORE_MAX,
 )
+from reviews.validators import validate_username_for_model
 
 
 def current_year():
@@ -27,6 +28,7 @@ class User(AbstractUser):
                 message="Имя пользователя может содержать только латинские "
                         "буквы, цифры и символы",
             ),
+            validate_username_for_model,
         ],
         verbose_name="имя пользователя",
     )
