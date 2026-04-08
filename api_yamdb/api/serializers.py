@@ -1,77 +1,50 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+from django.shortcuts import get_object_or_404
 
 from reviews.models import Category, Comment, Genre, Review, Title
 from reviews.constants import (
-    CONFIRMATION_CODE_LENGTH,
     MAX_EMAIL_LENGTH,
     MAX_USERNAME_LENGTH,
 )
 
+from .mixins import UsernameValidationMixin
+
 User = get_user_model()
 
 
-def validate_username(username):
-    if username == settings.USER_PAGE_URL:
-        raise serializers.ValidationError(
-            f'Имя пользователя "{settings.USER_PAGE_URL}" ' f"не разрешено."
-        )
-    validator = RegexValidator(
-        regex=r"^[\w.@+-]+\Z",
-        message="Имя пользователя может содержать только латинские "
-        "буквы, цифры и символы",
-    )
-    validator(username)
-    return username
-
-
-class SignUpSerializer(serializers.Serializer):
+class SignUpSerializer(UsernameValidationMixin, serializers.Serializer):
     username = serializers.CharField(
         max_length=MAX_USERNAME_LENGTH,
         required=True,
     )
     email = serializers.EmailField(max_length=MAX_EMAIL_LENGTH, required=True)
 
-    def validate_username(self, username):
-        return validate_username(username)
 
-
-class TokenSerializer(serializers.Serializer):
-    username = serializers.CharField(
-        max_length=MAX_USERNAME_LENGTH, required=True
-    )
+class TokenSerializer(UsernameValidationMixin, serializers.Serializer):
+    username = serializers.CharField(max_length=MAX_USERNAME_LENGTH, required=True)
     confirmation_code = serializers.CharField(
-        max_length=CONFIRMATION_CODE_LENGTH,
+        max_length=settings.CONFIRMATION_CODE_LENGTH,
         required=True,
         validators=[
             RegexValidator(
-                regex=r"^\d+$",
-                message="Код подтверждения должен состоять только из цифр",
+                regex=settings.USERNAME_REGEX,
+                message='Код подтверждения должен состоять только из цифр'
             )
         ],
     )
 
-    def validate_username(self, username):
-        return validate_username(username)
 
-
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(UsernameValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = (
-            "username", "email", "first_name", "last_name", "bio", "role"
-        )
-
-    def validate_username(self, username):
-        return validate_username(username)
+        fields = ("username", "email", "first_name", "last_name", "bio", "role")
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
-        read_only=True, slug_field="username")
+    author = serializers.SlugRelatedField(read_only=True, slug_field="username")
 
     class Meta:
         fields = ("id", "text", "author", "pub_date")
@@ -79,8 +52,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
-        read_only=True, slug_field="username")
+    author = serializers.SlugRelatedField(read_only=True, slug_field="username")
 
     class Meta:
         fields = ("id", "text", "author", "score", "pub_date")
@@ -90,7 +62,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request.method != "POST":
             return data
-        title_id = request.parser_context.get("kwargs", {})["title_id"]
+        title_id = request.parser_context["kwargs"]["title_id"]
         if Review.objects.filter(
             author=request.user, title_id=title_id
         ).exists():
@@ -113,36 +85,24 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ("name", "slug")
 
 
-class TitleBaseSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Title
-        fields = ("id", "name", "year", "description", "genre", "category")
-
-
-class TitleReadSerializer(TitleBaseSerializer):
-    category = CategorySerializer(read_only=True)
-    genre = GenreSerializer(read_only=True, many=True)
-    rating = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = Title
-        fields = (
-            "id",
-            "name",
-            "year",
-            "rating",
-            "description",
-            "genre",
-            "category",
-            "rating",
-        )
-
-
-class TitleWriteSerializer(TitleBaseSerializer):
+class TitleWriteSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(), slug_field="slug"
     )
     genre = serializers.SlugRelatedField(
         many=True, queryset=Genre.objects.all(), slug_field="slug"
     )
+
+    class Meta:
+        model = Title
+        fields = ("id", "name", "year", "description", "genre", "category")
+
+
+class TitleReadSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(read_only=True, many=True)
+    rating = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Title
+        fields = TitleWriteSerializer.Meta.fields + ("rating",)

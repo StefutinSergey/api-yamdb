@@ -1,6 +1,6 @@
 from pathlib import Path
 import os
-
+import string
 from dotenv import load_dotenv
 
 
@@ -11,8 +11,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY не задан. Укажите его в .env файле")
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
@@ -133,6 +134,12 @@ REST_FRAMEWORK = {
     ],
 }
 
-DEFAULT_FROM_EMAIL = 'webmaster@localhost'
-USER_PAGE_URL = 'me'
+
 AUTH_USER_MODEL = 'reviews.User'
+CONFIRMATION_CODE_CHARS = string.digits
+CONFIRMATION_CODE_LENGTH = 6
+DEFAULT_FROM_EMAIL = 'webmaster@localhost'
+PLACEHOLDER_PIN_SIMBOL = '©'
+PLACEHOLDER_PIN = PLACEHOLDER_PIN_SIMBOL * CONFIRMATION_CODE_LENGTH
+USER_PAGE_URL = 'me'
+USERNAME_REGEX = r'^[\w.@+-]+\Z'

@@ -1,11 +1,8 @@
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import (
-    MaxValueValidator,
-    MinValueValidator,
-    RegexValidator
-)
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
 
 from .constants import (
     CONFIRMATION_CODE_LENGTH,
@@ -26,9 +23,9 @@ class User(AbstractUser):
         unique=True,
         validators=[
             RegexValidator(
-                regex=r"^[\w.@+-]+\Z",
+                regex=settings.USERNAME_REGEX,
                 message="Имя пользователя может содержать только латинские "
-                "буквы, цифры и символы",
+                        "буквы, цифры и символы",
             ),
         ],
         verbose_name="имя пользователя",
@@ -55,19 +52,18 @@ class User(AbstractUser):
         verbose_name="код подтверждения",
     )
     email = models.EmailField(
-        max_length=MAX_EMAIL_LENGTH, unique=True, verbose_name="email"
+        max_length=MAX_EMAIL_LENGTH,
+        unique=True,
+        verbose_name="электронная почта"
     )
 
     class Meta:
         verbose_name = "пользователь"
         verbose_name_plural = "пользователи"
+        ordering = ('username',)
 
     def is_admin(self):
-        return (
-            self.role == self.ROLE_ADMIN
-            or self.is_superuser
-            or self.is_staff
-        )
+        return self.role == self.ROLE_ADMIN or self.is_staff
 
     def is_moderator(self):
         return self.role == self.ROLE_MODERATOR
@@ -143,16 +139,14 @@ class Title(models.Model):
 
 class BaseAuthorTextPubDateModel(models.Model):
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE, verbose_name="автор"
-    )
+        User, on_delete=models.CASCADE, verbose_name="автор")
     text = models.TextField(verbose_name="текст")
     pub_date = models.DateTimeField(
-        auto_now_add=True, verbose_name="дата публикации"
-    )
+        auto_now_add=True, verbose_name="дата публикации")
 
     class Meta:
         abstract = True
-        ordering = ["-pub_date"]
+        ordering = ("-pub_date",)
         default_related_name = "%(class)ss"
 
 
@@ -160,6 +154,7 @@ class Review(BaseAuthorTextPubDateModel):
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
+        verbose_name='произведение'
     )
     score = models.IntegerField(
         validators=[
@@ -172,19 +167,20 @@ class Review(BaseAuthorTextPubDateModel):
     class Meta(BaseAuthorTextPubDateModel.Meta):
         verbose_name = "Отзыв"
         verbose_name_plural = "Отзывы"
-        ordering = ["pub_date"]
+        ordering = ("pub_date",)
         constraints = [
             models.UniqueConstraint(
-                fields=["author", "title"], name="unique_review"
-            )
+                fields=["author", "title"], name="unique_review")
         ]
-        default_related_name = "reviews"
 
 
 class Comment(BaseAuthorTextPubDateModel):
-    review = models.ForeignKey(Review, on_delete=models.CASCADE)
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        verbose_name='отзыв'
+    )
 
-    class Meta:
+    class Meta(BaseAuthorTextPubDateModel.Meta):
         verbose_name = "Комментарий"
         verbose_name_plural = "Комментарии"
-        default_related_name = "comments"
