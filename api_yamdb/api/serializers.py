@@ -24,7 +24,8 @@ class SignUpSerializer(UsernameValidationMixin, serializers.Serializer):
 
 
 class TokenSerializer(UsernameValidationMixin, serializers.Serializer):
-    username = serializers.CharField(max_length=MAX_USERNAME_LENGTH, required=True)
+    username = serializers.CharField(
+        max_length=MAX_USERNAME_LENGTH, required=True)
     confirmation_code = serializers.CharField(
         max_length=settings.CONFIRMATION_CODE_LENGTH,
         required=True,
@@ -40,11 +41,14 @@ class TokenSerializer(UsernameValidationMixin, serializers.Serializer):
 class UserSerializer(UsernameValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("username", "email", "first_name", "last_name", "bio", "role")
+        fields = (
+            "username", "email", "first_name", "last_name", "bio", "role"
+        )
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(read_only=True, slug_field="username")
+    author = serializers.SlugRelatedField(
+        read_only=True, slug_field="username")
 
     class Meta:
         fields = ("id", "text", "author", "pub_date")
@@ -52,7 +56,8 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(read_only=True, slug_field="username")
+    author = serializers.SlugRelatedField(
+        read_only=True, slug_field="username")
 
     class Meta:
         fields = ("id", "text", "author", "score", "pub_date")
