@@ -90,7 +90,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request.method != "POST":
             return data
-        title_id = request.parser_context.get("kwargs", {})["title_id"]
+        title_id = request.parser_context.get["kwargs"]["title_id"]
         if Review.objects.filter(
             author=request.user, title_id=title_id
         ).exists():
