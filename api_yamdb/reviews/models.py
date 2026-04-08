@@ -146,7 +146,7 @@ class BaseAuthorTextPubDateModel(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ["-pub_date"]
+        ordering = ("-pub_date",)
         default_related_name = "%(class)ss"
 
 
@@ -154,6 +154,7 @@ class Review(BaseAuthorTextPubDateModel):
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
+        verbose_name='произведение'
     )
     score = models.IntegerField(
         validators=[
@@ -166,18 +167,20 @@ class Review(BaseAuthorTextPubDateModel):
     class Meta(BaseAuthorTextPubDateModel.Meta):
         verbose_name = "Отзыв"
         verbose_name_plural = "Отзывы"
-        ordering = ["pub_date"]
+        ordering = ("pub_date",)
         constraints = [
             models.UniqueConstraint(
                 fields=["author", "title"], name="unique_review")
         ]
-        default_related_name = "reviews"
 
 
 class Comment(BaseAuthorTextPubDateModel):
-    review = models.ForeignKey(Review, on_delete=models.CASCADE)
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        verbose_name='отзыв'
+    )
 
-    class Meta:
+    class Meta(BaseAuthorTextPubDateModel.Meta):
         verbose_name = "Комментарий"
         verbose_name_plural = "Комментарии"
-        default_related_name = "comments"
