@@ -44,21 +44,21 @@ def signup(request):
     serializer.is_valid(raise_exception=True)
     username = serializer.validated_data['username']
     email = serializer.validated_data['email']
-    try:
-        user, _ = User.objects.get_or_create(
-            username=username, email=email
-        )
-    except IntegrityError:
-        raise serializers.ValidationError(
-            {'email': 'Пользователь с таким email уже существует.'},
-        )
-    if User.objects.filter(username=username).exclude(email=email).exists():
-        raise serializers.ValidationError(
-            {'username': 'Пользователь с таким username уже существует.'}
-        )
-    chars = CONFIRMATION_CODE_CHARS
-    length = CONFIRMATION_CODE_LENGTH
-    confirmation_code = ''.join(random.choices(chars, k=length))
+    if User.objects.filter(username=username).exists():
+        user = User.objects.get(username=username)
+        if user.email != email:
+            raise serializers.ValidationError(
+                {'username': 'Пользователь с таким username уже существует.'}
+            )
+    else:
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError(
+                {'email': 'Пользователь с таким email уже существует.'}
+            )
+        user = User.objects.create_user(username=username, email=email)
+    confirmation_code = ''.join(random.choices(
+        settings.CONFIRMATION_CODE_CHARS, k=settings.CONFIRMATION_CODE_LENGTH
+    ))
     user.confirmation_code = confirmation_code
     user.save()
     send_mail(
