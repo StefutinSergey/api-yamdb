@@ -3,6 +3,7 @@ import random
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
+from django.db import IntegrityError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -42,18 +43,19 @@ def signup(request):
     serializer.is_valid(raise_exception=True)
     username = serializer.validated_data['username']
     email = serializer.validated_data['email']
-    if User.objects.filter(username=username).exists():
-        user = User.objects.get(username=username)
-        if user.email != email:
-            raise serializers.ValidationError(
-                {'username': 'Пользователь с таким username уже существует.'}
-            )
-    else:
-        if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError(
-                {'email': 'Пользователь с таким email уже существует.'}
-            )
-        user = User.objects.create_user(username=username, email=email)
+    try:
+        user, _ = User.objects.get_or_create(
+            username=username, email=email
+        )
+    except IntegrityError:
+        raise serializers.ValidationError(
+            {'email': f'Пользователь с email {email} уже существует.'}
+            if User.objects.filter(email=email).exists()
+            else {
+                'username':
+                f'Пользователь с username {username} уже существует.'
+            }
+        )
     confirmation_code = ''.join(random.choices(
         settings.CONFIRMATION_CODE_CHARS, k=settings.CONFIRMATION_CODE_LENGTH
     ))
@@ -80,8 +82,9 @@ def token(request):
         user.confirmation_code != code
         or settings.PLACEHOLDER_PIN == user.confirmation_code
     ):
-        user.confirmation_code = settings.PLACEHOLDER_PIN
-        user.save()
+        if settings.PLACEHOLDER_PIN != user.confirmation_code:
+            user.confirmation_code = settings.PLACEHOLDER_PIN
+            user.save()
         raise serializers.ValidationError(
             {'detail': 'Неверный код подтверждения'})
     return Response({'access': str(AccessToken.for_user(user))})
