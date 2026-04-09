@@ -29,21 +29,14 @@ class TokenSerializer(UsernameValidationMixin, serializers.Serializer):
     confirmation_code = serializers.CharField(
         max_length=settings.CONFIRMATION_CODE_LENGTH,
         required=True,
-        validators=[
-            RegexValidator(
-                regex=settings.USERNAME_REGEX,
-                message='Код подтверждения должен состоять только из цифр'
-            )
-        ],
     )
 
 
 class UserSerializer(UsernameValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = (
-            "username", "email", "first_name", "last_name", "bio", "role"
-        )
+        fields = ("username", "email", "first_name",
+                  "last_name", "bio", "role")
 
 
 class CommentSerializer(serializers.ModelSerializer):
