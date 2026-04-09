@@ -29,21 +29,14 @@ class TokenSerializer(UsernameValidationMixin, serializers.Serializer):
     confirmation_code = serializers.CharField(
         max_length=settings.CONFIRMATION_CODE_LENGTH,
         required=True,
-        validators=[
-            RegexValidator(
-                regex=settings.USERNAME_REGEX,
-                message='Код подтверждения должен состоять только из цифр'
-            )
-        ],
     )
 
 
 class UserSerializer(UsernameValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = (
-            "username", "email", "first_name", "last_name", "bio", "role"
-        )
+        fields = ("username", "email", "first_name",
+                  "last_name", "bio", "role")
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -90,6 +83,24 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ("name", "slug")
 
 
+class TitleReadSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(read_only=True, many=True)
+    rating = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Title
+        fields = (
+            "id",
+            "name",
+            "year",
+            "description",
+            "genre",
+            "category",
+            "rating",
+        )
+
+
 class TitleWriteSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(), slug_field="slug"
@@ -100,14 +111,4 @@ class TitleWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = ("id", "name", "year", "description", "genre", "category")
-
-
-class TitleReadSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)
-    genre = GenreSerializer(read_only=True, many=True)
-    rating = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = Title
-        fields = TitleWriteSerializer.Meta.fields + ("rating",)
+        fields = TitleReadSerializer.Meta.fields[:-1]
