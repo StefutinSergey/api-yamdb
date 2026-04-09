@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.validators import RegexValidator
 from rest_framework import serializers
 from django.shortcuts import get_object_or_404
 
