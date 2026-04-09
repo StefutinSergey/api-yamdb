@@ -3,7 +3,6 @@ import random
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
-from django.db import IntegrityError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -14,7 +13,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
-from reviews.constants import CONFIRMATION_CODE_CHARS, CONFIRMATION_CODE_LENGTH
 from reviews.models import Category, Genre, Review, Title
 from .filters import TitleFilter
 from .permissions import (
@@ -44,21 +42,21 @@ def signup(request):
     serializer.is_valid(raise_exception=True)
     username = serializer.validated_data['username']
     email = serializer.validated_data['email']
-    try:
-        user, _ = User.objects.get_or_create(
-            username=username, email=email
-        )
-    except IntegrityError:
-        raise serializers.ValidationError(
-            {'email': 'Пользователь с таким email уже существует.'},
-        )
-    if User.objects.filter(username=username).exclude(email=email).exists():
-        raise serializers.ValidationError(
-            {'username': 'Пользователь с таким username уже существует.'}
-        )
-    chars = CONFIRMATION_CODE_CHARS
-    length = CONFIRMATION_CODE_LENGTH
-    confirmation_code = ''.join(random.choices(chars, k=length))
+    if User.objects.filter(username=username).exists():
+        user = User.objects.get(username=username)
+        if user.email != email:
+            raise serializers.ValidationError(
+                {'username': 'Пользователь с таким username уже существует.'}
+            )
+    else:
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError(
+                {'email': 'Пользователь с таким email уже существует.'}
+            )
+        user = User.objects.create_user(username=username, email=email)
+    confirmation_code = ''.join(random.choices(
+        settings.CONFIRMATION_CODE_CHARS, k=settings.CONFIRMATION_CODE_LENGTH
+    ))
     user.confirmation_code = confirmation_code
     user.save()
     send_mail(
@@ -78,9 +76,12 @@ def token(request):
     username = serializer.validated_data['username']
     code = serializer.validated_data['confirmation_code']
     user = get_object_or_404(User, username=username)
-    confirmation_code = user.confirmation_code
-    user.confirmation_code = ''
-    if confirmation_code != code:
+    if (
+        user.confirmation_code != code
+        or settings.PLACEHOLDER_PIN == user.confirmation_code
+    ):
+        user.confirmation_code = settings.PLACEHOLDER_PIN
+        user.save()
         raise serializers.ValidationError(
             {'detail': 'Неверный код подтверждения'})
     return Response({'access': str(AccessToken.for_user(user))})
